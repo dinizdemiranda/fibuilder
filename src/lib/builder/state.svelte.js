@@ -251,6 +251,7 @@ export function addElement(type, target = {}) {
 					direction: 'horizontal',
 					itemSizing: 'auto', // 'auto' | 'fill'
 					justify: 'left', // 'left' | 'center' | 'right' | 'around' | 'between' | 'evenly'
+					align: 'end', // 'start' | 'center' | 'end' — cross-axis (vertical, when horizontal) alignment
 					gap: 16,
 					children: [],
 					props: { ...visibilityProps },

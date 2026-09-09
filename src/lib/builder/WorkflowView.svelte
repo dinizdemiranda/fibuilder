@@ -6,6 +6,8 @@
 	import LabelNode from './LabelNode.svelte';
 	import TransformNode from './TransformNode.svelte';
 	import TransformMenu from './TransformMenu.svelte';
+	import GeneratorNode from './GeneratorNode.svelte';
+	import GeneratorMenu from './GeneratorMenu.svelte';
 	import Icon from './Icon.svelte';
 	import {
 		nodePositionFor,
@@ -19,6 +21,7 @@
 		insertTransformIntoEdge,
 		resolveValueType,
 		createTransform,
+		createGenerator,
 		removeTransform,
 		getTransform,
 		setTransformPosition,
@@ -36,6 +39,8 @@
 	let deleteHoverId = $state(null);
 	let hoverClearTimer = null;
 	let transformMenu = $state(null); // { screenX, screenY, canvasX, canvasY, valueType, context }
+	let canvasHoverPos = $state(null); // { x, y } viewport-local screen coords — where the hover "Add" icon shows
+	let generatorMenu = $state(null); // { screenX, screenY, canvasX, canvasY }
 
 	function toCanvas(clientX, clientY) {
 		const rect = viewportEl.getBoundingClientRect();
@@ -219,6 +224,60 @@
 		transformMenu = null;
 	}
 
+	// A socket's own hover affordance ("Drag to connect" / the drop target)
+	// needs a clear halo around it — the add-icon must yield to it slightly
+	// before the pointer is even on the 12px dot, not just exactly on it.
+	const SOCKET_CLEARANCE = 12;
+	function nearAnySocket(clientX, clientY) {
+		for (const el of viewportEl.querySelectorAll('.wf-socket')) {
+			const r = el.getBoundingClientRect();
+			const dx = clientX - (r.left + r.width / 2);
+			const dy = clientY - (r.top + r.height / 2);
+			if (Math.hypot(dx, dy) <= SOCKET_CLEARANCE) return true;
+		}
+		return false;
+	}
+
+	// The hover "Add" icon only makes sense over truly empty canvas — not
+	// while panning/dragging a node/wire, and not over a node, link, or the
+	// viewport's own floating chrome (toolbar/hint/the icon itself).
+	function onViewportMouseMove(e) {
+		if (spaceHeld || panDrag || nodeDrag || connDrag || generatorMenu) {
+			canvasHoverPos = null;
+			return;
+		}
+		// Hovering the icon itself must not hide it out from under the pointer
+		// mid-click — leave its position exactly where it already is.
+		if (e.target.closest('.wf-add-hint')) return;
+		if (e.target.closest('.wf-node, .wf-tnode, .wf-link-hit, .wf-link-actions, .wf-toolbar, .wf-hint')) {
+			canvasHoverPos = null;
+			return;
+		}
+		if (nearAnySocket(e.clientX, e.clientY)) {
+			canvasHoverPos = null;
+			return;
+		}
+		const rect = viewportEl.getBoundingClientRect();
+		canvasHoverPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+	}
+
+	function onViewportMouseLeave() {
+		canvasHoverPos = null;
+	}
+
+	function openGeneratorMenu(e) {
+		if (!canvasHoverPos) return;
+		const cur = toCanvas(e.clientX, e.clientY);
+		generatorMenu = { screenX: canvasHoverPos.x, screenY: canvasHoverPos.y, canvasX: cur.x, canvasY: cur.y };
+		canvasHoverPos = null;
+	}
+
+	function onGeneratorMenuSelect(type) {
+		if (!generatorMenu) return;
+		createGenerator(type, generatorMenu.canvasX, generatorMenu.canvasY);
+		generatorMenu = null;
+	}
+
 	function edgeColor(edge) {
 		if (edge.from.kind === 'transformOut') {
 			const t = getTransform(edge.from.id);
@@ -258,6 +317,8 @@
 	style="background-position: {workflowView.panX}px {workflowView.panY}px; background-size: {22 * workflowView.zoom}px {22 * workflowView.zoom}px;"
 	onwheel={onWheel}
 	onmousedown={onViewportMouseDown}
+	onmousemove={onViewportMouseMove}
+	onmouseleave={onViewportMouseLeave}
 >
 	<div
 		class="wf-canvas"
@@ -308,12 +369,21 @@
 		{/each}
 
 		{#each doc.workflow.transforms as t (t.id)}
-			<TransformNode
-				transform={t}
-				onHeaderMouseDown={(e) => startNodeDrag('transform', t.id, e)}
-				onOutputMouseDown={(e) => startConnDrag(transformOutEndpoint(t.id), e)}
-				onRemove={removeTransform}
-			/>
+			{#if t.kind === 'generator'}
+				<GeneratorNode
+					generator={t}
+					onHeaderMouseDown={(e) => startNodeDrag('transform', t.id, e)}
+					onOutputMouseDown={(e) => startConnDrag(transformOutEndpoint(t.id), e)}
+					onRemove={removeTransform}
+				/>
+			{:else}
+				<TransformNode
+					transform={t}
+					onHeaderMouseDown={(e) => startNodeDrag('transform', t.id, e)}
+					onOutputMouseDown={(e) => startConnDrag(transformOutEndpoint(t.id), e)}
+					onRemove={removeTransform}
+				/>
+			{/if}
 		{/each}
 
 		{#each connectionPaths as link (link.id)}
@@ -350,6 +420,27 @@
 			valueType={transformMenu.valueType}
 			onselect={onTransformMenuSelect}
 			onclose={() => (transformMenu = null)}
+		/>
+	{/if}
+
+	{#if canvasHoverPos && !generatorMenu}
+		<button
+			type="button"
+			class="wf-add-hint"
+			style="left: {canvasHoverPos.x}px; top: {canvasHoverPos.y}px;"
+			data-tooltip="Add generated value"
+			onclick={openGeneratorMenu}
+		>
+			<Icon name="plus" size={13} />
+		</button>
+	{/if}
+
+	{#if generatorMenu}
+		<GeneratorMenu
+			x={generatorMenu.screenX}
+			y={generatorMenu.screenY}
+			onselect={onGeneratorMenuSelect}
+			onclose={() => (generatorMenu = null)}
 		/>
 	{/if}
 
@@ -444,6 +535,31 @@
 	.wf-link-btn-delete:hover {
 		background: #fde3e3;
 		color: #b3261e;
+	}
+	/* Follows the cursor over empty canvas (screen-space, outside .wf-canvas
+	   so it isn't scaled by zoom) — a quick affordance to drop a
+	   "generated value" node without needing to drag a wire first. */
+	.wf-add-hint {
+		position: absolute;
+		width: 24px;
+		height: 24px;
+		transform: translate(-50%, -50%);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 1px dashed #9aa4b2;
+		border-radius: 50%;
+		background: #fff;
+		color: #5a5f68;
+		cursor: pointer;
+		pointer-events: auto;
+		z-index: 5;
+	}
+	.wf-add-hint:hover {
+		border-style: solid;
+		border-color: #0b57d0;
+		background: #f2f6fe;
+		color: #0b57d0;
 	}
 	.wf-toolbar {
 		position: absolute;

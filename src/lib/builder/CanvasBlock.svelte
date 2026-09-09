@@ -105,6 +105,7 @@
 					sizing={element.itemSizing}
 					gap={element.gap}
 					justify={element.justify}
+					align={element.align ?? 'end'}
 				/>
 			</div>
 		{:else}

@@ -172,7 +172,11 @@
 	background: none;
 	border: 1px solid #d3d6db;
 	border-radius: 6px;
-	padding: 6px;
+	padding: 0 8px;
+	/* Fixed rather than padding-derived, so it lines up exactly with
+	   .ctrl-text/.ctrl-select next to it regardless of the icon size drawn
+	   inside — padding alone gave slightly different heights per icon size. */
+	height: 34px;
 	cursor: pointer;
 	color: #5a5f68;
 	display: flex;

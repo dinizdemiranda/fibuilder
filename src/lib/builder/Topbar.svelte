@@ -53,7 +53,7 @@
 	<div class="topbar-side">
 		<div class="brand-wrap">
 			<div class="brand">FI Builder</div>
-			<button type="button" class="brand-menu-btn" data-tooltip="Page menu" onclick={() => (pageMenuOpen = !pageMenuOpen)}>
+			<button type="button" class="brand-menu-btn" onclick={() => (pageMenuOpen = !pageMenuOpen)}>
 				<Icon name="chevronDown" size={13} />
 			</button>
 			{#if pageMenuOpen}
@@ -98,7 +98,6 @@
 	</div>
 	<div class="topbar-side topbar-right">
 		<button type="button" class="preview-btn" onclick={() => (uiState.previewOpen = true)}>Preview</button>
-		<button type="button" class="publish-btn">Publish</button>
 	</div>
 </header>
 
@@ -237,20 +236,6 @@
 		color: #1a1c1e;
 	}
 	.preview-btn {
-		background: #fff;
-		color: #1a1c1e;
-		border: none;
-		font-family: inherit;
-		font-size: 12px;
-		font-weight: 600;
-		padding: 7px 16px;
-		border-radius: 6px;
-		cursor: pointer;
-	}
-	.preview-btn:hover {
-		background: #e2e4e8;
-	}
-	.publish-btn {
 		background: #0b57d0;
 		color: #fff;
 		border: none;
@@ -261,7 +246,7 @@
 		border-radius: 6px;
 		cursor: pointer;
 	}
-	.publish-btn:hover {
+	.preview-btn:hover {
 		background: #0a4bb8;
 	}
 	.page-menu-backdrop {

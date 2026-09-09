@@ -13,7 +13,8 @@
 		fill = false,
 		sizing = 'auto',
 		gap = null,
-		justify = null
+		justify = null,
+		align = null
 	} = $props();
 
 	const JUSTIFY_CSS = {
@@ -23,6 +24,11 @@
 		around: 'space-around',
 		between: 'space-between',
 		evenly: 'space-evenly'
+	};
+	const ALIGN_CSS = {
+		start: 'flex-start',
+		center: 'center',
+		end: 'flex-end'
 	};
 
 	let dropIndex = $state(null);
@@ -79,7 +85,7 @@
 <div
 	class="fi-flow fi-flow--{direction}"
 	class:fi-flow-fill={fill}
-	style="{gap !== null ? `gap:${gap}px;` : ''}{justify ? `justify-content:${JUSTIFY_CSS[justify] ?? 'flex-start'};` : ''}"
+	style="{gap !== null ? `gap:${gap}px;` : ''}{justify ? `justify-content:${JUSTIFY_CSS[justify] ?? 'flex-start'};` : ''}{align ? `align-items:${ALIGN_CSS[align] ?? 'flex-start'};` : ''}"
 	bind:this={zoneEl}
 	ondragover={onDragOver}
 	ondragleave={onDragLeave}

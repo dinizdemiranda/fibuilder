@@ -125,7 +125,7 @@ export const blockDefs = {
 			combinator: 'AND', // 'AND' | 'OR', used once there are 2+ filters
 			fillHeight: false, // 'Fixed' (fixedHeight px) vs 'Fill' the available vertical space
 			fixedHeight: 200,
-			showControls: true // the module's own Reset filters/Refresh buttons — hide when driving it entirely via events
+			showControls: false // the module's own Reset filters/Refresh buttons — hide when driving it entirely via events
 		}
 	}
 };

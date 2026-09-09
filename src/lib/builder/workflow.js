@@ -12,7 +12,7 @@
 // (source/transformOut) can fan out to as many edges as needed.
 
 import { doc, allElements } from './state.svelte.js';
-import { allValueSources, valueTypeOf, VALUE_PROP, resolveProp } from './bindings.js';
+import { allValueSources, valueTypeOf, VALUE_PROP, resolveProp, nowValue } from './bindings.js';
 import { blockDefs } from './types.js';
 import { getLabelById, getLabelThumbnail } from './labels.js';
 import { typeIcon as variableTypeIcon } from './variables.js';
@@ -215,6 +215,7 @@ export function resolveValueType(from, seen = new Set()) {
 		seen.add(from.id);
 		const t = getTransform(from.id);
 		if (!t) return 'text';
+		if (t.kind === 'generator') return t.valueType;
 		if (t.type === 'offset') {
 			const upstream = edgeInto(transformInEndpoint(t.id));
 			return upstream ? resolveValueType(upstream.from, seen) : (t.valueType ?? 'text');
@@ -238,7 +239,11 @@ export const TRANSFORM_TYPES = [
 ];
 
 export function transformColor(type) {
-	return TRANSFORM_TYPES.find((t) => t.value === type)?.color ?? '#8a8f98';
+	return (
+		TRANSFORM_TYPES.find((t) => t.value === type)?.color ??
+		GENERATOR_TYPES.find((g) => g.value === type)?.color ??
+		'#8a8f98'
+	);
 }
 
 export const CURRENCIES = [
@@ -288,6 +293,7 @@ export function defaultTransformSettings(type, valueType) {
 export function createTransform(type, x, y, valueType) {
 	const transform = {
 		id: nextTransformId(),
+		kind: 'transform',
 		type,
 		name: transformTypeLabel(type), // user-editable, same rename UX as a component
 		valueType, // resolved once at creation — drives which settings fields the node shows
@@ -297,6 +303,36 @@ export function createTransform(type, x, y, valueType) {
 	};
 	doc.workflow.transforms.push(transform);
 	return transform;
+}
+
+// "Generated value" nodes: no input, unlike a transform — they manufacture a
+// value from nothing (currently just the live current date) and offer it as
+// an output any field/transform can wire into. Stored in the same
+// doc.workflow.transforms array as regular transforms (same id scheme,
+// canvas position, and transformOut endpoint machinery) but tagged
+// kind:'generator' so evaluation and the node UI treat them differently.
+export const GENERATOR_TYPES = [
+	{ value: 'currentDate', label: 'Current Date', icon: 'calendar', valueType: 'date', color: '#0b57d0' }
+];
+
+export function generatorLabel(type) {
+	return GENERATOR_TYPES.find((g) => g.value === type)?.label ?? type;
+}
+
+export function createGenerator(type, x, y) {
+	const def = GENERATOR_TYPES.find((g) => g.value === type);
+	const generator = {
+		id: nextTransformId(),
+		kind: 'generator',
+		type,
+		name: def?.label ?? type,
+		valueType: def?.valueType ?? 'text',
+		settings: {},
+		x,
+		y
+	};
+	doc.workflow.transforms.push(generator);
+	return generator;
 }
 
 export function getTransform(id) {
@@ -324,7 +360,10 @@ export function describeFromEndpoint(from) {
 	if (from.kind === 'transformOut') {
 		const t = getTransform(from.id);
 		if (!t) return null;
-		const def = TRANSFORM_TYPES.find((tt) => tt.value === t.type);
+		const def =
+			t.kind === 'generator'
+				? GENERATOR_TYPES.find((g) => g.value === t.type)
+				: TRANSFORM_TYPES.find((tt) => tt.value === t.type);
 		return { icon: def?.icon ?? 'bolt', name: t.name || def?.label || t.type, transform: true, color: def?.color };
 	}
 	return null;
@@ -518,6 +557,7 @@ export function sampleValueForEndpoint(from, seen = new Set()) {
 		seen.add(from.id);
 		const t = getTransform(from.id);
 		if (!t) return '';
+		if (t.kind === 'generator') return nowValue();
 		const upstream = edgeInto(transformInEndpoint(t.id));
 		const input = upstream ? sampleValueForEndpoint(upstream.from, seen) : '';
 		return applyTransform(t.type, t.settings, input, t.valueType);
@@ -540,6 +580,7 @@ export function resolveEndpointValue(from, seen = new Set()) {
 		seen.add(from.id);
 		const t = getTransform(from.id);
 		if (!t) return '';
+		if (t.kind === 'generator') return nowValue();
 		const upstream = edgeInto(transformInEndpoint(t.id));
 		const input = upstream ? resolveEndpointValue(upstream.from, seen) : '';
 		return applyTransform(t.type, t.settings, input, t.valueType);

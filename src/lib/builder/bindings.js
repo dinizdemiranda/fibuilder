@@ -47,7 +47,7 @@ export const VALUE_TYPE = {
 // current-time.
 export const NOW_SENTINEL = '__now__';
 
-function nowValue() {
+export function nowValue() {
 	return new Date().toISOString().slice(0, 10);
 }
 

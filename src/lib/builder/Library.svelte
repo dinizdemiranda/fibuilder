@@ -82,7 +82,6 @@
 				type="button"
 				class="rail-btn"
 				class:active={activeTab === tab.id}
-				data-tooltip={tab.label}
 				onclick={() => (activeTab = tab.id)}
 			>
 				<Icon name={tab.icon} size={18} />
@@ -229,7 +228,6 @@
 					<button type="button" class="add-btn" onclick={() => (varTypeMenuOpen = !varTypeMenuOpen)}>
 						+ Add variable
 					</button>
-					</div>
 					{#if varTypeMenuOpen}
 						<!-- svelte-ignore a11y_click_events_have_key_events -->
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -243,6 +241,7 @@
 							{/each}
 						</div>
 					{/if}
+				</div>
 				</div>
 			</div>
 		{/if}

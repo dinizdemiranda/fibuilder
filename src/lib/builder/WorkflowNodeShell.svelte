@@ -69,6 +69,13 @@
 		align-items: stretch;
 		height: auto;
 		padding: 0;
+		/* The base .wf-node-header rule's gap:8px is meant for its icon+title
+		   row, not this stacked thumb+row layout — left in, it added 8px
+		   between the thumbnail and title that workflow.js's LABEL_THUMB_H
+		   math (which every field row's socket position is computed from)
+		   didn't know about, so connection curves landed a few px above the
+		   actual socket. */
+		gap: 0;
 	}
 	.wf-node-header-thumb {
 		width: 100%;

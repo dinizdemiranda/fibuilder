@@ -68,4 +68,13 @@
 		right: 0;
 		transform: none;
 	}
+	/* Anything hovered near the very top of the viewport (the topbar itself,
+	   or the canvas's own toolbar sitting just below it) has no room above it
+	   for the default upward tooltip — it renders clipped/invisible against
+	   the top edge. Flip those down instead. */
+	:global(.topbar [data-tooltip]::after),
+	:global(.canvas-toolbar [data-tooltip]::after) {
+		bottom: auto;
+		top: calc(100% + 6px);
+	}
 </style>
