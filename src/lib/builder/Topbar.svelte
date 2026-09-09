@@ -1,9 +1,11 @@
 <script>
 	import { doc, uiState, clearCanvas } from './state.svelte.js';
 	import Icon from './Icon.svelte';
+	import DocJsonModal from './DocJsonModal.svelte';
 
 	let pageMenuOpen = $state(false);
 	let confirmClearOpen = $state(false);
+	let jsonModalOpen = $state(false);
 
 	let editingTitle = $state(false);
 	// svelte-ignore state_referenced_locally -- seeds the draft once; the effect below resyncs on every doc.page.title change
@@ -43,6 +45,11 @@
 		confirmClearOpen = true;
 	}
 
+	function openJsonModal() {
+		pageMenuOpen = false;
+		jsonModalOpen = true;
+	}
+
 	function doClearCanvas() {
 		clearCanvas();
 		confirmClearOpen = false;
@@ -61,6 +68,10 @@
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div class="page-menu-backdrop" onclick={() => (pageMenuOpen = false)}></div>
 				<div class="page-menu">
+					<button type="button" class="page-menu-item" onclick={openJsonModal}>
+						<Icon name="copy" size={13} />
+						See JSON
+					</button>
 					<button type="button" class="page-menu-item page-menu-item--danger" onclick={openClearConfirm}>
 						<Icon name="trash" size={13} />
 						Clear canvas
@@ -92,7 +103,7 @@
 				Design
 			</button>
 			<button type="button" class:active={uiState.mode === 'workflow'} onclick={() => (uiState.mode = 'workflow')}>
-				Workflow
+				Data Pipeline
 			</button>
 		</div>
 	</div>
@@ -100,6 +111,10 @@
 		<button type="button" class="preview-btn" onclick={() => (uiState.previewOpen = true)}>Preview</button>
 	</div>
 </header>
+
+{#if jsonModalOpen}
+	<DocJsonModal onclose={() => (jsonModalOpen = false)} />
+{/if}
 
 {#if confirmClearOpen}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->

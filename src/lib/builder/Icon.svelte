@@ -11,6 +11,7 @@
 		preview: 'M12 5c5 0 9 4.5 9 7s-4 7-9 7-9-4.5-9-7 4-7 9-7Zm0 3.2A3.8 3.8 0 1 0 12 15.8 3.8 3.8 0 0 0 12 8.2Zm0 2a1.8 1.8 0 1 1 0 3.6 1.8 1.8 0 0 1 0-3.6Z',
 		lookup: 'M11 4a7 7 0 1 1-4.95 11.95L2 20l-1.4-1.4 4.05-4.05A7 7 0 0 1 11 4Zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10Z',
 		grip: 'M8 5h2v2H8V5Zm6 0h2v2h-2V5ZM8 11h2v2H8v-2Zm6 0h2v2h-2v-2ZM8 17h2v2H8v-2Zm6 0h2v2h-2v-2Z',
+		copy: 'M8 2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1v-2h1V4H8v1H6V4a2 2 0 0 1 2-2Zm-2 5h10a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Zm0 2v11h10V9H6Z',
 		section: 'M4 4h16v16H4V4Zm2 2v12h6V6H6Zm8 0v5h4V6h-4Zm0 7v5h4v-5h-4Z',
 		trash: 'M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h2v9H7V9Zm4 0h2v9h-2V9Zm4 0h2v9h-2V9Z',
 		chevron: 'M8 5l8 7-8 7V5Z',
