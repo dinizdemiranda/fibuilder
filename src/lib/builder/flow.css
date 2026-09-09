@@ -1,0 +1,63 @@
+.fi-flow {
+	display: flex;
+	gap: 16px;
+}
+.fi-flow--vertical {
+	flex-direction: column;
+}
+.fi-flow--horizontal {
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-items: flex-start;
+}
+/* flex-shrink:0 (the "0 auto" half) matters as much as flex-grow:1 here: with
+   the default shrink:1 + basis:0, once sibling content overflows the
+   scrollable column this sits in, flexbox's shrink pass has nothing to take
+   the deficit from *except* this flex-basis:0 item — squeezing a "Fill"
+   element straight to 0px instead of the intended behavior, letting the
+   ancestor's own overflow:auto scroll to it. flex-basis:auto (content-sized)
+   avoids that: this only grows past its natural size when there's genuinely
+   room to. */
+.fi-flow-fill {
+	flex: 1 0 auto;
+	min-height: 100%;
+	/* In the canvas, this class only ever sits on a flex *child* — the grid
+	   item is a separate .fi-column ancestor that already has its own
+	   min-width:0. Preview's 2-column layout has no such wrapper: this class
+	   is applied directly to the grid item. A grid item's default
+	   min-width:auto sizes it to its content's min-content width, so a wide
+	   child (e.g. a Data Lookup table) was forcing the whole column — and the
+	   page along with it — to blow out past the intended 50/50 split instead
+	   of respecting the grid track and letting the table scroll internally. */
+	min-width: 0;
+}
+.fi-flow-empty {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 80px;
+	width: 100%;
+	color: #9aa0a8;
+	font-family: system-ui, sans-serif;
+	font-size: 13px;
+	border: 2px dashed #d3d6db;
+	border-radius: 10px;
+	padding: 16px;
+	box-sizing: border-box;
+}
+.fi-drop-indicator {
+	background: var(--fi-primary, #0b57d0);
+	border-radius: 2px;
+	flex-shrink: 0;
+}
+.fi-drop-indicator--vertical {
+	height: 3px;
+	width: 100%;
+	margin: 2px 0;
+}
+.fi-drop-indicator--horizontal {
+	width: 3px;
+	height: 40px;
+	margin: 0 2px;
+}
