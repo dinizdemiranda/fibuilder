@@ -77,4 +77,27 @@
 		bottom: auto;
 		top: calc(100% + 6px);
 	}
+	/* The add/remove-column buttons sit right at a page edge (left, right,
+	   or top — see Canvas.svelte). .fi-page clips its own overflow, but
+	   .fi-page-scroll (a nested overflow:auto ancestor) still measures its
+	   own scrollable content bounds from a centered tooltip's box even
+	   though it'd end up visually clipped by .fi-page anyway — that
+	   phantom extra scroll range was what actually created the "weird"
+	   scrollbar/jump the moment one of these was hovered. Anchoring (or, for
+	   the delete button, also flipping down) keeps the tooltip's box inside
+	   the page's own bounds so it never contributes any of that. */
+	:global(.col-add-btn--left[data-tooltip]::after) {
+		left: 0;
+		transform: none;
+	}
+	:global(.col-add-btn--right[data-tooltip]::after),
+	:global(.col-delete-btn[data-tooltip]::after) {
+		left: auto;
+		right: 0;
+		transform: none;
+	}
+	:global(.col-delete-btn[data-tooltip]::after) {
+		bottom: auto;
+		top: calc(100% + 6px);
+	}
 </style>

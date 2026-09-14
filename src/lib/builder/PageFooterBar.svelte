@@ -2,19 +2,21 @@
 	import { doc } from './state.svelte.js';
 </script>
 
-<div class="fi-footer">
-	<div class="fi-footer-side">
-		{#if doc.page.footer.showSecondary}
-			<button type="button" class="fi-footer-btn fi-footer-btn--secondary">{doc.page.footer.secondaryLabel}</button>
-		{/if}
+{#if !doc.page.footer.hidden}
+	<div class="fi-footer">
+		<div class="fi-footer-side">
+			{#if doc.page.footer.showSecondary}
+				<button type="button" class="fi-footer-btn fi-footer-btn--secondary">{doc.page.footer.secondaryLabel}</button>
+			{/if}
+		</div>
+		<div class="fi-footer-side fi-footer-side--right">
+			{#if doc.page.footer.showText}
+				<button type="button" class="fi-footer-btn fi-footer-btn--text">{doc.page.footer.textLabel}</button>
+			{/if}
+			<button type="button" class="fi-footer-btn fi-footer-btn--primary">{doc.page.footer.primaryLabel}</button>
+		</div>
 	</div>
-	<div class="fi-footer-side fi-footer-side--right">
-		{#if doc.page.footer.showText}
-			<button type="button" class="fi-footer-btn fi-footer-btn--text">{doc.page.footer.textLabel}</button>
-		{/if}
-		<button type="button" class="fi-footer-btn fi-footer-btn--primary">{doc.page.footer.primaryLabel}</button>
-	</div>
-</div>
+{/if}
 
 <style>
 	.fi-footer {

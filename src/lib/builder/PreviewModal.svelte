@@ -6,7 +6,8 @@
 	import OrientationToggle from './OrientationToggle.svelte';
 	import PageFooterBar from './PageFooterBar.svelte';
 	import { cssVarsString } from './theme.js';
-	import { columnRatioParts, fitPreviewPageDimensions, PREVIEW_PAGE_MARGIN } from './layout.js';
+	import { columnRatioParts, columnGridTemplate, fitPreviewPageDimensions, PREVIEW_PAGE_MARGIN } from './layout.js';
+	import { resolveProp } from './bindings.js';
 	import './flow.css';
 
 	// This component is created fresh every time Preview opens (+page.svelte
@@ -43,8 +44,19 @@
 		fitPreviewPageDimensions(previewOrientation, bodyW - PREVIEW_PAGE_MARGIN * 2, bodyH - PREVIEW_PAGE_MARGIN * 2)
 	);
 	let columnTemplate = $derived(
-		doc.page.showColumnDivider ? `${ratio[0]}fr 1px ${ratio[1]}fr` : `${ratio[0]}fr ${ratio[1]}fr`
+		columnGridTemplate(ratio, doc.page.showColumnDivider, doc.page.colAWidthMode, doc.page.colBWidthMode, dims.width)
 	);
+	let independentScroll = $derived(doc.page.columns === 2 && doc.page.scrollIndependently);
+	function hasNoScrollFill(list) {
+		return list.some((el) => (el.type === 'grid' || el.type === 'gallery') && el.props.fillHeight);
+	}
+	let colANoScroll = $derived(hasNoScrollFill(doc.elements));
+	let colBNoScroll = $derived(hasNoScrollFill(doc.elementsB));
+
+	let colAHidden = $derived(resolveProp(doc.page.colA, 'hidden') === 'true');
+	let colADisabled = $derived(resolveProp(doc.page.colA, 'disabled') === 'true');
+	let colBHidden = $derived(resolveProp(doc.page.colB, 'hidden') === 'true');
+	let colBDisabled = $derived(resolveProp(doc.page.colB, 'disabled') === 'true');
 
 	function close() {
 		uiState.previewOpen = false;
@@ -77,28 +89,48 @@
 						doc.page
 					)}"
 				>
-					<div class="preview-page-scroll">
+					<div class="preview-page-scroll" class:independent-scroll={independentScroll}>
 						{#if doc.page.columns === 2}
 							<div class="fi-columns" style="grid-template-columns: {columnTemplate};">
-								<div class="fi-flow fi-flow--vertical fi-flow-fill">
-									{#each doc.elements as el (el.id)}
-										<PreviewNode element={el} />
-									{/each}
+								<div
+									class="fi-flow fi-flow--vertical fi-flow-fill preview-col"
+									class:independent-col={independentScroll && !colANoScroll}
+									class:fi-inactive={colADisabled}
+									style={doc.page.colA.props.background ? `background:${doc.page.colA.props.background};` : ''}
+								>
+									{#if !colAHidden}
+										{#each doc.elements as el (el.id)}
+											<PreviewNode element={el} />
+										{/each}
+									{/if}
 								</div>
 								{#if doc.page.showColumnDivider}
 									<div class="preview-col-divider"></div>
 								{/if}
-								<div class="fi-flow fi-flow--vertical fi-flow-fill">
-									{#each doc.elementsB as el (el.id)}
-										<PreviewNode element={el} />
-									{/each}
+								<div
+									class="fi-flow fi-flow--vertical fi-flow-fill preview-col"
+									class:independent-col={independentScroll && !colBNoScroll}
+									class:fi-inactive={colBDisabled}
+									style={doc.page.colB.props.background ? `background:${doc.page.colB.props.background};` : ''}
+								>
+									{#if !colBHidden}
+										{#each doc.elementsB as el (el.id)}
+											<PreviewNode element={el} />
+										{/each}
+									{/if}
 								</div>
 							</div>
 						{:else}
-							<div class="fi-flow fi-flow--vertical fi-flow-fill">
-								{#each doc.elements as el (el.id)}
-									<PreviewNode element={el} />
-								{/each}
+							<div
+								class="fi-flow fi-flow--vertical fi-flow-fill preview-col"
+								class:fi-inactive={colADisabled}
+								style={doc.page.colA.props.background ? `background:${doc.page.colA.props.background};` : ''}
+							>
+								{#if !colAHidden}
+									{#each doc.elements as el (el.id)}
+										<PreviewNode element={el} />
+									{/each}
+								{/if}
 							</div>
 						{/if}
 					</div>
@@ -231,16 +263,39 @@
 		flex: 1;
 		min-height: 0;
 		overflow: auto;
-		padding: 24px;
 		box-sizing: border-box;
 		display: flex;
 		flex-direction: column;
 	}
+	.preview-col {
+		padding: 24px;
+		box-sizing: border-box;
+	}
+	/* Matches PreviewNode.svelte's own .fi-inactive (a separate scoped style
+	   block, so duplicated here rather than shared) — a disabled column
+	   dims and stops accepting input, same as a disabled component. */
+	.preview-col.fi-inactive {
+		opacity: 0.5;
+		pointer-events: none;
+	}
+	.preview-page-scroll.independent-scroll {
+		overflow: hidden;
+	}
+	.preview-page-scroll.independent-scroll .fi-columns {
+		min-height: 0;
+		height: 100%;
+	}
 	.fi-columns {
 		display: grid;
-		gap: 20px;
+		/* No gap — each column already has its own padding (.preview-col),
+		   so a grid gap on top of that would double up the space between
+		   them. */
 		flex: 1;
 		min-height: 100%;
+	}
+	.fi-columns .independent-col {
+		overflow-y: auto;
+		min-height: 0;
 	}
 	.preview-col-divider {
 		background: var(--fi-outline, #c9cdd4);

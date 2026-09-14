@@ -1,6 +1,7 @@
 <script>
 	import PropSection from './PropSection.svelte';
 	import Segmented from './Segmented.svelte';
+	import Switch from './Switch.svelte';
 	import VisibilityFields from './VisibilityFields.svelte';
 	import EventsSection from './EventsSection.svelte';
 
@@ -35,6 +36,10 @@
 			value={element.props.size ?? 'normal'}
 			onchange={(v) => (element.props.size = v)}
 		/>
+	</div>
+	<div class="prop-field prop-field-row">
+		<span class="prop-label">Full width</span>
+		<Switch bind:checked={element.props.fullWidth} />
 	</div>
 </PropSection>
 

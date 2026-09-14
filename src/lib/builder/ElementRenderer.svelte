@@ -10,6 +10,7 @@
 	import DividerElement from './elements/DividerElement.svelte';
 	import NumberElement from './elements/NumberElement.svelte';
 	import DataLookupElement from './elements/DataLookupElement.svelte';
+	import GalleryElement from './elements/GalleryElement.svelte';
 	import { resolveProp, VALUE_PROP } from './bindings.js';
 
 	const renderers = {
@@ -23,7 +24,8 @@
 		date: DateElement,
 		divider: DividerElement,
 		number: NumberElement,
-		dataLookup: DataLookupElement
+		dataLookup: DataLookupElement,
+		gallery: GalleryElement
 	};
 
 	let { element, preview = false } = $props();

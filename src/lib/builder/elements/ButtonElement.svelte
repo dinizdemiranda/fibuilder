@@ -14,7 +14,14 @@
 	let size = $derived(element.props.size ?? 'normal');
 </script>
 
-<button type="button" class="fi-btn fi-btn--{variant} fi-btn--{size}" onclick={onClick}>{element.props.label}</button>
+<button
+	type="button"
+	class="fi-btn fi-btn--{variant} fi-btn--{size}"
+	class:fi-btn--full={element.props.fullWidth}
+	onclick={onClick}
+>
+	{element.props.label}
+</button>
 
 <style>
 	.fi-btn {
@@ -23,6 +30,13 @@
 		border-radius: var(--fi-radius);
 		cursor: pointer;
 		box-sizing: border-box;
+	}
+	/* The wrapper's own width (blockWidthStyle, layout.js) already fills the
+	   row/column when fullWidth is on — a <button> is inline-block by
+	   default though, so it still needs its own width:100% to actually
+	   stretch to match that wrapper instead of just hugging its label. */
+	.fi-btn--full {
+		width: 100%;
 	}
 	.fi-btn--primary {
 		border: none;

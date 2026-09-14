@@ -12,8 +12,9 @@ import { allElements, setPreviewOverride, clearPreviewOverride, triggerPreviewCo
 import { resolveProp, VALUE_PROP } from './bindings.js';
 
 // Which control methods make sense for each controllable component type.
-// Types with no entry here (button, image, divider, section, labelPreview)
-// aren't offered as "Control component" targets at all.
+// Types with no entry here (button, divider, section, labelPreview) aren't
+// offered as "Control component" (or Data Lookup/Gallery "Set a field")
+// targets at all.
 export const CONTROL_METHODS = {
 	textfield: ['clearValue', 'setValue', 'toggleEnabled', 'toggleVisibility'],
 	number: ['clearValue', 'setValue', 'toggleEnabled', 'toggleVisibility'],
@@ -21,6 +22,7 @@ export const CONTROL_METHODS = {
 	options: ['clearValue', 'setValue', 'toggleEnabled', 'toggleVisibility'],
 	text: ['setValue', 'toggleVisibility'],
 	labelSelector: ['setValue'],
+	image: ['setValue', 'toggleVisibility'],
 	dataLookup: ['refresh', 'resetFilters']
 };
 

@@ -16,8 +16,12 @@
 import { allElements, previewOverrides, doc } from './state.svelte.js';
 
 // Which prop on each element type holds its "value" — the thing other
-// elements can reference. Types without an entry (button, image, section,
-// divider, modules) can't be used as a binding source.
+// elements can reference, and the same thing an Image, Data Lookup, or
+// Gallery "Set a field" event writes into (events.js's CONTROL_METHODS
+// gates *which* types are offered as a settable target; this is what tells
+// runEvent/runRowSelectEvents which literal prop to actually write). Types
+// without an entry (button, section, divider, and the other modules) can't
+// be used as a binding source or a "set a field" target.
 export const VALUE_PROP = {
 	text: 'content',
 	textfield: 'defaultValue',
@@ -25,6 +29,7 @@ export const VALUE_PROP = {
 	date: 'defaultValue',
 	options: 'defaultValue',
 	labelSelector: 'selectedLabelId',
+	image: 'src',
 	variable: 'value'
 };
 
@@ -38,7 +43,8 @@ export const VALUE_TYPE = {
 	number: 'number',
 	date: 'date',
 	options: 'text',
-	labelSelector: 'text'
+	labelSelector: 'text',
+	image: 'text'
 };
 
 // A stand-in stored as a variable's defaultValue (or embedded as an

@@ -108,6 +108,15 @@
 					align={element.align ?? 'end'}
 				/>
 			</div>
+		{:else if element.type === 'grid'}
+			<FlowZone
+				list={element.children}
+				containerId={element.id}
+				direction="vertical"
+				allowSections={false}
+				emptyLabel="Drop components into this grid"
+				gridConfig={element}
+			/>
 		{:else}
 			<ElementRenderer {element} />
 		{/if}
@@ -124,6 +133,12 @@
 		border: 1px solid transparent;
 		cursor: default;
 		box-sizing: border-box;
+		/* Only matters for a fillHeight element (flex:1 1 auto) squeezed into
+		   less space than its unpaginated/uncapped natural content wants —
+		   without this, the browser's automatic min-height:auto refuses to
+		   shrink it below that content, overflowing straight past a properly
+		   bounded ancestor (e.g. .fi-column) instead of actually fitting it. */
+		min-height: 0;
 	}
 	.fi-block.hovered {
 		border-color: #67e8f9;

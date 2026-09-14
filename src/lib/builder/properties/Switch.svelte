@@ -1,9 +1,12 @@
 <script>
-	let { checked = $bindable(false), disabled = false } = $props();
+	// `onchange` is for callers whose backing value isn't itself a plain
+	// boolean (e.g. toggling doc.page.gridA between null and a fresh config
+	// object) — bind:checked still works as before for everyone else.
+	let { checked = $bindable(false), disabled = false, onchange = null } = $props();
 </script>
 
 <label class="switch" class:disabled>
-	<input type="checkbox" bind:checked {disabled} />
+	<input type="checkbox" bind:checked {disabled} onchange={onchange} />
 	<span class="switch-track"><span class="switch-thumb"></span></span>
 </label>
 

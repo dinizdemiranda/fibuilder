@@ -1,19 +1,22 @@
 <script>
-	import { selectedElement, removeElement, trySyncNameFromLabel } from './state.svelte.js';
+	import { doc, uiState, selectedElement, removeElement, removeColumn, trySyncNameFromLabel } from './state.svelte.js';
 	import { blockDefs } from './types.js';
 	import PageProperties from './properties/PageProperties.svelte';
+	import ColumnProperties from './properties/ColumnProperties.svelte';
 	import TextProperties from './properties/TextProperties.svelte';
 	import TextFieldProperties from './properties/TextFieldProperties.svelte';
 	import ButtonProperties from './properties/ButtonProperties.svelte';
 	import OptionsProperties from './properties/OptionsProperties.svelte';
 	import ImageProperties from './properties/ImageProperties.svelte';
 	import SectionProperties from './properties/SectionProperties.svelte';
+	import GridProperties from './properties/GridProperties.svelte';
 	import LabelSelectorProperties from './properties/LabelSelectorProperties.svelte';
 	import LabelPreviewProperties from './properties/LabelPreviewProperties.svelte';
 	import DateProperties from './properties/DateProperties.svelte';
 	import DividerProperties from './properties/DividerProperties.svelte';
 	import NumberProperties from './properties/NumberProperties.svelte';
 	import DataLookupProperties from './properties/DataLookupProperties.svelte';
+	import GalleryProperties from './properties/GalleryProperties.svelte';
 	import ElementIdentity from './properties/ElementIdentity.svelte';
 	import Icon from './Icon.svelte';
 	import './properties/panel.css';
@@ -25,15 +28,20 @@
 		options: OptionsProperties,
 		image: ImageProperties,
 		section: SectionProperties,
+		grid: GridProperties,
 		labelSelector: LabelSelectorProperties,
 		labelPreview: LabelPreviewProperties,
 		date: DateProperties,
 		divider: DividerProperties,
 		number: NumberProperties,
-		dataLookup: DataLookupProperties
+		dataLookup: DataLookupProperties,
+		gallery: GalleryProperties
 	};
 
 	let element = $derived(selectedElement());
+	let selectedColSide = $derived(
+		uiState.selectedId === 'col-a' ? 'a' : uiState.selectedId === 'col-b' ? 'b' : null
+	);
 	let Form = $derived(element ? forms[element.type] : null);
 
 	// Keeps a component's name mirroring its Label field live as the user
@@ -55,6 +63,18 @@
 			>
 				<Icon name="trash" size={14} />
 			</button>
+		{:else if selectedColSide}
+			<span class="header-title">Column {selectedColSide === 'a' ? 'A' : 'B'}</span>
+			{#if doc.page.columns === 2}
+				<button
+					type="button"
+					class="icon-btn"
+					data-tooltip="Remove column"
+					onclick={() => removeColumn(selectedColSide)}
+				>
+					<Icon name="trash" size={14} />
+				</button>
+			{/if}
 		{:else}
 			<span class="header-title">Page properties</span>
 		{/if}
@@ -62,6 +82,8 @@
 	<div class="properties-scroll">
 		{#if element && Form}
 			<Form {element} />
+		{:else if selectedColSide}
+			<ColumnProperties side={selectedColSide} />
 		{:else}
 			<PageProperties />
 		{/if}

@@ -1,16 +1,19 @@
-// Inline sizing for a block inside a flow container. No per-element style is
-// user-configurable — this just keeps flows looking sane in both directions.
+// Inline sizing for a block inside a flow container. Almost none of this is
+// user-configurable — it just keeps flows looking sane in both directions —
+// except a Button's own `fullWidth` prop, which opts it into the same
+// width-filling behavior every other component already gets by default.
 // `sizing` is section-level only ('auto' hugs content, 'fill' stretches every
 // item edge-to-edge regardless of type); page-root flows always pass 'auto'.
-export function blockWidthStyle(direction, type, sizing = 'auto') {
+export function blockWidthStyle(direction, type, sizing = 'auto', fullWidth = false) {
 	if (sizing === 'fill') {
 		return direction === 'horizontal' ? 'flex: 1 1 0;' : 'width: 100%;';
 	}
 	if (direction === 'horizontal') {
-		if (type === 'button' || type === 'text') return 'flex: 0 0 auto;';
+		if (type === 'button') return fullWidth ? 'flex: 1 1 0;' : 'flex: 0 0 auto;';
+		if (type === 'text') return 'flex: 0 0 auto;';
 		return 'flex: 1 1 220px; max-width: 360px;';
 	}
-	if (type === 'button') return 'align-self: flex-start;';
+	if (type === 'button' && !fullWidth) return 'align-self: flex-start;';
 	return 'width: 100%;';
 }
 
@@ -38,9 +41,23 @@ export function blockWidthStyle(direction, type, sizing = 'auto') {
 // content-driven/auto, which CSS never treats as a "definite" size — so a
 // height:100% descendant chain (e.g. Label Preview's own LabelCanvas) would
 // silently resolve to 0 instead of filling the row.
+// Gallery/Grid are a different case from Data Lookup/Label Preview: those
+// don't clip their own content, so they *need* the content-based floor
+// above to avoid an ugly collapse. Gallery/Grid do clip (overflow:hidden,
+// paginating/laying out whatever fits) — for them, that same content-based
+// floor is exactly the bug: it stops .fi-flow-fill (their ancestor column's
+// own flex item, shrink:0 by design — see flow.css) from ever resolving
+// smaller than their *unpaginated* natural size, so the whole chain inflates
+// to fit content nothing ever actually shows. flex-basis:0 gives them no
+// forced minimum at all, so the ancestor chain is free to shrink to
+// whatever's genuinely available and let them clip the rest themselves.
+const SELF_CLIPPING_FILL_TYPES = new Set(['gallery', 'grid']);
+
 export function fillHeightStyle(element, direction) {
 	if (!element?.props?.fillHeight) return '';
-	if (direction === 'vertical') return 'flex: 1 1 auto;';
+	if (direction === 'vertical') {
+		return SELF_CLIPPING_FILL_TYPES.has(element.type) ? 'flex: 1 1 0; min-height: 0;' : 'flex: 1 1 auto;';
+	}
 	return 'align-self: stretch;';
 }
 
@@ -49,44 +66,44 @@ export function columnRatioParts(ratio) {
 	return [a || 50, b || 50];
 }
 
-// The page is a fixed-ratio frame — 16:10 in landscape, 10:16 in portrait
-// (the same physical size, just rotated) — that always fits its container
-// without ever needing that container to scroll. Given the space actually
-// available (already net of padding), this returns the largest frame at
-// that ratio that fits inside it on both axes.
-const ASPECT_LONG = 16;
-const ASPECT_SHORT = 10;
-
-export function fitPageDimensions(orientation, availableWidth, availableHeight) {
-	const aspectW = orientation === 'landscape' ? ASPECT_LONG : ASPECT_SHORT;
-	const aspectH = orientation === 'landscape' ? ASPECT_SHORT : ASPECT_LONG;
-	const w = Math.max(0, availableWidth);
-	const h = Math.max(0, availableHeight);
-	const scale = Math.min(w / aspectW, h / aspectH);
-	return {
-		width: Math.max(0, Math.floor(aspectW * scale)),
-		height: Math.max(0, Math.floor(aspectH * scale))
-	};
+// The two-column grid's track list. 'fill' columns take their proportional
+// share of the ratio (the drag-handle's 6ths — see Canvas.svelte); 'auto'
+// columns instead shrink to their own content's width (grid's max-content
+// keyword), floored at 1/6 of the page so an empty/near-empty auto column
+// never collapses to nothing. Used by both the design canvas and Preview,
+// each passing its own actual page width for the floor.
+export function columnGridTemplate(ratio, showDivider, colAWidthMode, colBWidthMode, pageWidth) {
+	const floor = Math.max(0, Math.round(pageWidth / 6));
+	const track = (mode, fr) => (mode === 'auto' ? `minmax(${floor}px, max-content)` : `${fr}fr`);
+	const a = track(colAWidthMode, ratio[0]);
+	const b = track(colBWidthMode, ratio[1]);
+	return showDivider ? `${a} 1px ${b}` : `${a} ${b}`;
 }
 
-// Same fit, but never shrinks past minSize on either axis — once the
-// container's too small to fit a page that size, the page just overflows it
-// (its container scrolls) instead of continuing to shrink into illegibility.
-// The fixed aspect ratio means clamping the smaller axis to minSize is
-// enough to guarantee the other axis clears it too.
-export function fitPageDimensionsWithMin(orientation, availableWidth, availableHeight, minSize = 540) {
-	const dims = fitPageDimensions(orientation, availableWidth, availableHeight);
-	if (dims.width >= minSize && dims.height >= minSize) return dims;
-	const aspectW = orientation === 'landscape' ? ASPECT_LONG : ASPECT_SHORT;
-	const aspectH = orientation === 'landscape' ? ASPECT_SHORT : ASPECT_LONG;
-	const scale = minSize / Math.min(aspectW, aspectH);
-	return {
-		width: Math.floor(aspectW * scale),
-		height: Math.floor(aspectH * scale)
-	};
-}
+// The design canvas's page size is a fixed pixel size the user picks from a
+// short list of presets — never fit-to-container. A dynamically-sized page
+// meant every measurement-dependent descendant (Gallery's row/column math,
+// notably) was measuring a page that could itself still be settling into its
+// final size, which was a real source of layout bugs. A predefined size
+// removes that whole class of problem: what you measure is what you get,
+// every time, and the canvas just scrolls if the page doesn't fit the
+// viewport.
+export const PAGE_SIZE_PRESETS = [
+	{ id: '1280x800', label: '1280 × 800', w: 1280, h: 800 },
+	{ id: '1280x720', label: '1280 × 720', w: 1280, h: 720 },
+	{ id: '768x1024', label: '768 × 1024', w: 768, h: 1024 }
+];
 
-export const CANVAS_PADDING = 40;
+// Normalizes a preset's two dimensions onto the current orientation — the
+// longer of the two goes on the width axis for landscape, the height axis
+// for portrait — regardless of which axis the preset itself was defined
+// with (768×1024 is written portrait-first, the other two landscape-first).
+export function resolvePageSize(pageSizeId, orientation) {
+	const preset = PAGE_SIZE_PRESETS.find((p) => p.id === pageSizeId) ?? PAGE_SIZE_PRESETS[0];
+	const long = Math.max(preset.w, preset.h);
+	const short = Math.min(preset.w, preset.h);
+	return orientation === 'landscape' ? { width: long, height: short } : { width: short, height: long };
+}
 // Breathing room kept between .preview-page and the edges of .preview-body,
 // on all four sides.
 export const PREVIEW_PAGE_MARGIN = 16;

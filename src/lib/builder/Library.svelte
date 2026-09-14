@@ -2,7 +2,7 @@
 	import { blockDefs, libraryGroups } from './types.js';
 	import { doc, uiState, addElement, beginDragNew, endDrag, selectElement } from './state.svelte.js';
 	import { getLabelById, formatDimensions, getLabelThumbnail } from './labels.js';
-	import { dataSources } from './dataSources.js';
+	import { availableDataSources } from './projects.js';
 	import { VARIABLE_TYPES, typeIcon, removeVariable } from './variables.js';
 	import { NOW_SENTINEL } from './bindings.js';
 	import Icon from './Icon.svelte';
@@ -19,15 +19,15 @@
 	];
 
 	// Flat-with-indent list of every element on the canvas, for the Objects pane.
-	// Sections are one level deep at most, so a single pass is enough.
+	// Sections and Grids are one level deep at most, so a single pass is enough.
 	let objectList = $derived.by(() => {
 		const out = [];
 		const walk = (list) => {
 			for (const el of list) {
 				out.push({ id: el.id, name: el.name, type: el.type, depth: 0 });
-				if (el.type === 'section') {
+				if (el.type === 'section' || el.type === 'grid') {
 					for (const child of el.children) {
-						out.push({ id: child.id, name: child.name, type: child.type, depth: 1 });
+						if (child) out.push({ id: child.id, name: child.name, type: child.type, depth: 1 });
 					}
 				}
 			}
@@ -41,6 +41,7 @@
 	let labelPickerOpen = $state(false);
 	let popoverLabelId = $state(null);
 	let openDataSourceId = $state(null);
+	let currentDataSources = $derived(availableDataSources());
 	let varTypeMenuOpen = $state(false);
 	let variableModalType = $state(null); // set to a VARIABLE_TYPES value to open the create modal
 	let editingVariable = $state(null); // set to a variable object to open the edit modal
@@ -185,14 +186,14 @@
 			<div class="data-sources-section">
 
 				<h3>Data Sources</h3>
-				{#if dataSources.length === 0}
+				{#if currentDataSources.length === 0}
 				<div class="library-empty library-empty--inline">
 					<Icon name="database" size={26} />
 					<p>No data sources yet</p>
 				</div>
 				{:else}
 				<div class="datasource-list">
-					{#each dataSources as source (source.id)}
+					{#each currentDataSources as source (source.id)}
 					<button type="button" class="datasource-row" onclick={() => (openDataSourceId = source.id)}>
 						<span class="datasource-icon"><Icon name="database" size={18} /></span>
 						<span class="datasource-info">
@@ -253,7 +254,7 @@
 {/if}
 
 {#if openDataSourceId}
-	{@const activeSource = dataSources.find((s) => s.id === openDataSourceId)}
+	{@const activeSource = currentDataSources.find((s) => s.id === openDataSourceId)}
 	{#if activeSource}
 		<DataSourceModal source={activeSource} onclose={() => (openDataSourceId = null)} />
 	{/if}

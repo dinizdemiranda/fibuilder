@@ -35,7 +35,8 @@ export const blockDefs = {
 		defaultProps: {
 			label: 'Button',
 			variant: 'primary', // 'primary' | 'secondary' | 'text'
-			size: 'normal' // 'small' | 'normal' | 'large'
+			size: 'normal', // 'small' | 'normal' | 'large'
+			fullWidth: false // hugs its own content by default, like the label/size choices above
 		}
 	},
 	options: {
@@ -58,13 +59,23 @@ export const blockDefs = {
 		category: 'component',
 		defaultProps: {
 			src: '',
-			alt: 'Image'
+			alt: 'Image',
+			fillHeight: false // stretches to the column (or grid cell) like Data Lookup/Label Preview; otherwise a fixed 220px
 		}
 	},
 	section: {
 		label: 'Section',
 		icon: 'section',
 		category: 'component'
+	},
+	grid: {
+		label: 'Grid',
+		icon: 'grid',
+		category: 'component'
+		// columns/rows/colTracks/rowTracks live top-level on the element itself
+		// (see columnGrid.js's defaultGrid(), set in addElement) — same
+		// convention as Section's direction/gap/justify/align. fillHeight
+		// lives under props like every other module's fill/fixed toggle.
 	},
 	date: {
 		label: 'Date',
@@ -127,13 +138,51 @@ export const blockDefs = {
 			fixedHeight: 200,
 			showControls: false // the module's own Reset filters/Refresh buttons — hide when driving it entirely via events
 		}
+	},
+	gallery: {
+		label: 'Gallery',
+		icon: 'gallery',
+		category: 'module',
+		defaultProps: {
+			dataSourceId: null,
+			cardLayout: 'vertical', // 'vertical' | 'horizontal' | 'auto' — see galleryFields.js
+			// Ordered, reorderable list of the fixed field set — order is
+			// display order. { key, enabled, parts: [{type:'literal',value} |
+			// {type:'column',column} | {type:'variable',variableId}] }
+			fields: [
+				{ key: 'thumbnail', enabled: true, parts: [] },
+				{ key: 'title', enabled: true, parts: [] },
+				{ key: 'subtitle', enabled: true, parts: [] },
+				{ key: 'tag', enabled: true, parts: [] },
+				{ key: 'featuredText', enabled: true, parts: [] }
+			],
+			// Card WIDTH (min 160/max 320px) isn't user-configurable — cards
+			// always grow to fill each row with no leftover gap. `rows` is
+			// 'auto' or a number — see GalleryElement.svelte for exactly how
+			// each combines with fillHeight, but in short: a manual number
+			// exactly is how many rows show per page, and with fillHeight on
+			// each row's height is then stretched/compressed to make that
+			// many rows exactly fill the available space. 'auto' (the
+			// default) never stretches — it fits as many naturally-sized
+			// rows as the available space allows, adding a row instead of
+			// taller ones whenever there's room (with no bound to fit rows
+			// *into* — fillHeight off — it just falls back to 2). Either way
+			// the grid never scrolls — whatever doesn't fit becomes another
+			// page, flipped through with the Back/Next controls.
+			fillHeight: false,
+			rows: 'auto',
+			gap: 16,
+			filters: [],
+			combinator: 'AND',
+			showControls: false
+		}
 	}
 };
 
 export const libraryGroups = [
 	{
 		title: 'Components',
-		items: ['text', 'textfield', 'number', 'date', 'options', 'button', 'image', 'divider', 'section']
+		items: ['text', 'textfield', 'number', 'date', 'options', 'button', 'image', 'divider', 'section', 'grid']
 	},
-	{ title: 'Modules', items: ['labelSelector', 'labelPreview', 'dataLookup'] }
+	{ title: 'Modules', items: ['labelSelector', 'labelPreview', 'dataLookup', 'gallery'] }
 ];

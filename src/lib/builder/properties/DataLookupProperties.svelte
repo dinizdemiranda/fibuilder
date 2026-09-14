@@ -6,7 +6,8 @@
 	import FilterPopover from './FilterPopover.svelte';
 	import EventsSection from './EventsSection.svelte';
 	import DataLookupEventPopover from './DataLookupEventPopover.svelte';
-	import { dataSources, getDataSourceById } from '../dataSources.js';
+	import { getDataSourceById } from '../dataSources.js';
+	import { availableDataSources } from '../projects.js';
 	import { describeFilter } from '../dataLookup.js';
 	import { describeSelectEvent } from '../events.js';
 
@@ -74,7 +75,7 @@
 		<label class="prop-label" for="dl-source">Source</label>
 		<select id="dl-source" class="ctrl-select" value={element.props.dataSourceId ?? ''} onchange={onSourceChange}>
 			<option value="">Select a data source…</option>
-			{#each dataSources as s (s.id)}
+			{#each availableDataSources() as s (s.id)}
 				<option value={s.id}>{s.name}</option>
 			{/each}
 		</select>

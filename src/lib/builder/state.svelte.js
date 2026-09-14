@@ -1,5 +1,7 @@
 import { blockDefs } from './types.js';
 import { labelDefinitions } from './labels.js';
+import { dataSources } from './dataSources.js';
+import { defaultGrid } from './columnGrid.js';
 
 let idCounter = 0;
 function nextId(type) {
@@ -8,16 +10,30 @@ function nextId(type) {
 }
 
 export const doc = $state({
+	activeProjectId: 'logistics',
 	page: {
 		title: 'Untitled Page',
 		background: '#ffffff',
 		primaryColor: '#0b57d0',
 		cornerRadius: 8,
 		orientation: 'landscape', // 'portrait' | 'landscape'
+		pageSize: '1280x800', // one of PAGE_SIZE_PRESETS' ids (layout.js) — the design canvas's fixed page size
 		columns: 1, // 1 | 2
-		columnRatio: '50/50', // '35/65' | '50/50' | '65/35' — only used when columns === 2
-		showColumnDivider: true,
+		columnRatio: '6/6', // '<a>/<b>' in twelfths, a+b === 12 — only used when columns === 2
+		colAWidthMode: 'fill', // 'fill' | 'auto' — 'auto' shrinks the column to its content's own width, floored at 1/6 of the page
+		colBWidthMode: 'fill',
+		showColumnDivider: false,
+		scrollIndependently: false, // only meaningful when columns === 2 — each column gets its own scrollbar
+		// Column-level settings — shaped like a real element (id/type/props/
+		// bindings) on purpose, so VisibilityFields/DynamicValueField/
+		// resolveProp (all generic over that shape) work on a column with no
+		// special-casing. 'column' isn't a real blockDefs type — getFieldType
+		// (bindings.js) only branches on fieldKey for 'hidden'/'disabled'
+		// anyway, so that's never an issue.
+		colA: { id: 'col-a', type: 'column', props: { background: '', hidden: 'false', disabled: 'false' }, bindings: {} },
+		colB: { id: 'col-b', type: 'column', props: { background: '', hidden: 'false', disabled: 'false' }, bindings: {} },
 		footer: {
+			hidden: true,
 			showSecondary: true,
 			showText: true,
 			secondaryLabel: 'Cancel',
@@ -28,6 +44,7 @@ export const doc = $state({
 	elements: [], // column A (the only column when columns === 1)
 	elementsB: [], // column B — kept even when hidden, so toggling columns doesn't lose data
 	labels: labelDefinitions.map((l) => l.id), // ids of imported label_options.json definitions, in import order
+	dataSourceIds: dataSources.map((d) => d.id), // ids of data sources available in the active project — see projects.js
 	variables: [], // [{ id, name, type: 'string'|'number'|'boolean'|'date', defaultValue }]
 	workflow: {
 		connections: [], // [{ id, from: endpoint, to: endpoint }] — see workflow.js for endpoint shapes
@@ -124,52 +141,65 @@ export function endDrag() {
 	dragState.overContainerId = undefined;
 }
 
-// A "root" container is a page column, not a section. null = column A, 'colB' = column B.
+// A "root" container is a page column, not a section/grid. null = column A, 'colB' = column B.
 function isRootContainerId(id) {
 	return id === null || id === undefined || id === 'colB';
+}
+
+// Section and Grid are the only element types with their own `children` list
+// — both are restricted to living directly in a root column (never nested
+// inside each other or themselves), so they share this one check everywhere.
+function isContainerType(type) {
+	return type === 'section' || type === 'grid';
 }
 
 function rootListFor(containerId) {
 	return containerId === 'colB' ? doc.elementsB : doc.elements;
 }
 
-function findSectionById(id) {
+function findContainerById(id) {
 	return (
-		doc.elements.find((el) => el.type === 'section' && el.id === id) ??
-		doc.elementsB.find((el) => el.type === 'section' && el.id === id) ??
+		doc.elements.find((el) => isContainerType(el.type) && el.id === id) ??
+		doc.elementsB.find((el) => isContainerType(el.type) && el.id === id) ??
 		null
 	);
 }
 
 function listFor(containerId) {
 	if (isRootContainerId(containerId)) return rootListFor(containerId);
-	return findSectionById(containerId)?.children ?? null;
+	return findContainerById(containerId)?.children ?? null;
 }
 
-// Elements live at most two levels deep: a page column, or a section's children
-// within a column. Sections can't nest, so this is the whole search space.
+// Elements live at most two levels deep: a page column, or a section/grid's
+// children within a column. Neither nests inside the other, so this is the
+// whole search space. `owner` is the section/grid element the list belongs
+// to (null for a root column) — grids need it to know whether a slot is
+// cleared with `null` (preserving every other zone's position) instead of
+// spliced out (which would shift them).
 function locateContainer(id) {
 	for (const rootList of [doc.elements, doc.elementsB]) {
-		const idx = rootList.findIndex((el) => el.id === id);
-		if (idx !== -1) return { list: rootList, index: idx, element: rootList[idx] };
+		const idx = rootList.findIndex((el) => el?.id === id);
+		if (idx !== -1) return { list: rootList, index: idx, element: rootList[idx], owner: null };
 		for (const el of rootList) {
-			if (el.type === 'section') {
-				const cIdx = el.children.findIndex((c) => c.id === id);
-				if (cIdx !== -1) return { list: el.children, index: cIdx, element: el.children[cIdx] };
+			if (isContainerType(el.type)) {
+				const cIdx = el.children.findIndex((c) => c?.id === id);
+				if (cIdx !== -1) return { list: el.children, index: cIdx, element: el.children[cIdx], owner: el };
 			}
 		}
 	}
-	return { list: null, index: -1, element: null };
+	return { list: null, index: -1, element: null, owner: null };
 }
 
-// Every element (component, module, or section) across both columns and any
-// section children — the whole space element names must stay unique within.
+// Every element (component, module, section, or grid) across both columns
+// and any section/grid children — the whole space element names must stay
+// unique within. A grid's children array has null gaps for empty zones.
 export function allElements() {
 	const out = [];
 	const collect = (list) => {
 		for (const el of list) {
+			if (!el) continue;
 			out.push(el);
-			if (el.type === 'section') collect(el.children);
+			if (isContainerType(el.type)) collect(el.children);
 		}
 	};
 	collect(doc.elements);
@@ -224,15 +254,60 @@ export function selectElement(id) {
 	uiState.selectedId = id;
 }
 
+// A page column is selectable/hoverable like any element, but it isn't one
+// — it has no entry in doc.elements/elementsB (it *is* one of those lists).
+// 'col-a' | 'col-b' are reserved ids that never collide with a real element
+// id (those are always `${type}_${n}`).
+export function isColumnId(id) {
+	return id === 'col-a' || id === 'col-b';
+}
+
+// side: 'left' | 'right' — which side of the existing sole column the new,
+// empty column appears on. Column A always renders first (on the left) and
+// B second, so 'left' means the *new* column becomes A and the old A
+// content shifts over to become B; 'right' just brings B into view reusing
+// whatever it last held (columns keep their content even while hidden, so
+// switching back and forth never loses anything — same as the old
+// 1/2-column toggle did).
+export function addColumn(side) {
+	if (side === 'left') {
+		doc.elementsB = doc.elements;
+		doc.elements = [];
+	}
+	doc.page.columns = 2;
+}
+
+// side: 'a' | 'b' — the column being removed. Its own elements are pushed
+// onto the surviving column's list rather than discarded (appended after
+// the survivor's own elements). Single-column mode always reads
+// doc.elements, so the merged content ends up there regardless of which
+// side was removed. The sole remaining column can't be removed.
+export function removeColumn(side) {
+	if (doc.page.columns !== 2) return;
+	doc.elements = side === 'a' ? [...doc.elementsB, ...doc.elements] : [...doc.elements, ...doc.elementsB];
+	doc.elementsB = [];
+	doc.page.columns = 1;
+	if (isColumnId(uiState.selectedId)) uiState.selectedId = null;
+	if (isColumnId(uiState.hoveredId)) uiState.hoveredId = null;
+}
+
 // target: { containerId: null | 'colB' | sectionId, index }
+// For a grid target, `index` addresses a specific zone directly
+// (row*columns+col) rather than an array insert position — an occupied zone
+// rejects a brand-new element outright (there's nothing to swap it with).
 export function addElement(type, target = {}) {
 	const def = blockDefs[type];
 	if (!def) return null;
 	let containerId = target.containerId ?? null;
-	// Sections can only live in a column — never inside another section.
-	if (type === 'section' && !isRootContainerId(containerId)) containerId = null;
-	const toList = listFor(containerId);
-	if (!toList) return null;
+	// Section/Grid can only live in a column — never inside another section or grid.
+	if (isContainerType(type) && !isRootContainerId(containerId)) containerId = null;
+	const container = findContainerById(containerId);
+	if (container?.type === 'grid') {
+		const cellIndex = target.index ?? container.children.findIndex((c) => !c);
+		if (cellIndex < 0 || cellIndex >= container.children.length || container.children[cellIndex]) return null;
+	} else if (!listFor(containerId)) {
+		return null;
+	}
 
 	// A fresh Text Field/Number/Date/Options/Button starts named after its own
 	// default Label value (e.g. "Order ID"), not the generic palette label —
@@ -258,18 +333,38 @@ export function addElement(type, target = {}) {
 					bindings: {},
 					events: []
 				}
-			: {
-					id: nextId(type),
-					type,
-					name,
-					nameAuto: true,
-					props: { ...visibilityProps, ...structuredClone(def.defaultProps) },
-					bindings: {},
-					events: []
-				};
+			: type === 'grid'
+				? (() => {
+						const grid = defaultGrid();
+						return {
+							id: nextId('grid'),
+							type: 'grid',
+							name,
+							...grid,
+							children: new Array(grid.columns * grid.rows).fill(null),
+							props: { ...visibilityProps, fillHeight: false },
+							bindings: {},
+							events: []
+						};
+					})()
+				: {
+						id: nextId(type),
+						type,
+						name,
+						nameAuto: true,
+						props: { ...visibilityProps, ...structuredClone(def.defaultProps) },
+						bindings: {},
+						events: []
+					};
 
-	const index = Math.max(0, Math.min(target.index ?? toList.length, toList.length));
-	toList.splice(index, 0, el);
+	if (container?.type === 'grid') {
+		const cellIndex = target.index ?? container.children.findIndex((c) => !c);
+		container.children[cellIndex] = el;
+	} else {
+		const toList = listFor(containerId);
+		const index = Math.max(0, Math.min(target.index ?? toList.length, toList.length));
+		toList.splice(index, 0, el);
+	}
 	uiState.selectedId = el.id;
 	return el;
 }
@@ -292,25 +387,55 @@ export function clearCanvas() {
 }
 
 export function removeElement(id) {
-	const { list, index } = locateContainer(id);
+	const { list, index, owner } = locateContainer(id);
 	if (!list || index === -1) return;
-	list.splice(index, 1);
+	// A grid zone clears to null (preserving every other zone's position)
+	// instead of splicing out, which would shift the rest along.
+	if (owner?.type === 'grid') list[index] = null;
+	else list.splice(index, 1);
 	if (uiState.selectedId === id) uiState.selectedId = null;
 }
 
 // target: { containerId: null | 'colB' | sectionId, index }
+// For a grid target, `index` addresses a specific zone directly. Dropping
+// onto an empty zone just relocates the element there; dropping onto an
+// occupied one swaps the two — the occupant takes whatever slot (a grid
+// zone, or a plain list position) the dragged element is vacating.
 export function moveElement(id, target = {}) {
-	const { list: fromList, index: fromIndex, element } = locateContainer(id);
+	const { list: fromList, index: fromIndex, element, owner: fromOwner } = locateContainer(id);
 	if (!element) return;
 	let containerId = target.containerId ?? null;
-	if (element.type === 'section' && !isRootContainerId(containerId)) containerId = null;
+	if (isContainerType(element.type) && !isRootContainerId(containerId)) containerId = null;
+	const toContainer = findContainerById(containerId);
+
+	if (toContainer?.type === 'grid') {
+		const cellIndex = target.index ?? toContainer.children.findIndex((c) => !c);
+		if (cellIndex < 0 || cellIndex >= toContainer.children.length) return;
+		const occupant = toContainer.children[cellIndex];
+		if (occupant?.id === id) return; // dropped back on itself
+
+		if (fromOwner?.type === 'grid') fromList[fromIndex] = null;
+		else fromList.splice(fromIndex, 1);
+
+		if (occupant) {
+			if (fromOwner?.type === 'grid') fromList[fromIndex] = occupant;
+			else fromList.splice(Math.min(fromIndex, fromList.length), 0, occupant);
+		}
+
+		toContainer.children[cellIndex] = element;
+		uiState.selectedId = id;
+		return;
+	}
+
 	const toList = listFor(containerId);
 	if (!toList) return;
 
+	if (fromOwner?.type === 'grid') fromList[fromIndex] = null;
+	else fromList.splice(fromIndex, 1);
+
 	const sameList = toList === fromList;
 	let idx = target.index ?? toList.length;
-	fromList.splice(fromIndex, 1);
-	if (sameList && fromIndex < idx) idx -= 1;
+	if (sameList && fromOwner?.type !== 'grid' && fromIndex < idx) idx -= 1;
 	idx = Math.max(0, Math.min(idx, toList.length));
 	toList.splice(idx, 0, element);
 	uiState.selectedId = id;

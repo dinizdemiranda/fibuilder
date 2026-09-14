@@ -2,6 +2,7 @@
 	import ElementRenderer from './ElementRenderer.svelte';
 	import { blockWidthStyle, fillHeightStyle } from './layout.js';
 	import { resolveProp } from './bindings.js';
+	import { columnGridStyle } from './columnGrid.js';
 	import PreviewNode from './PreviewNode.svelte';
 	import './flow.css';
 
@@ -34,13 +35,23 @@
 
 {#if !isHidden}
 	<div
-		style={blockWidthStyle(direction, element.type, sizing) + fillHeightStyle(element, direction)}
+		style={blockWidthStyle(direction, element.type, sizing, element.props?.fullWidth) + fillHeightStyle(element, direction)}
 		class:fi-inactive={isDisabled}
 	>
 		{#if element.type === 'section'}
 			<div class="fi-flow fi-flow--{element.direction}" style={sectionFlowStyle(element)}>
 				{#each element.children as child (child.id)}
 					<PreviewNode element={child} direction={element.direction} sizing={element.itemSizing} />
+				{/each}
+			</div>
+		{:else if element.type === 'grid'}
+			<div class="fi-flow fi-flow--vertical" style={columnGridStyle(element, element.props.fillHeight)}>
+				{#each element.children as child, i (child ? child.id : `empty-${i}`)}
+					{#if child}
+						<PreviewNode element={child} />
+					{:else}
+						<div></div>
+					{/if}
 				{/each}
 			</div>
 		{:else}

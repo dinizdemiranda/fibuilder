@@ -46,6 +46,34 @@
 	padding: 16px;
 	box-sizing: border-box;
 }
+/* One per grid zone, real or empty — the grid's actual direct child, so
+   the highlight ring wraps whatever's inside cleanly regardless of content. */
+.fi-grid-slot {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	min-height: 0;
+	border-radius: 8px;
+}
+.fi-grid-slot.grid-target {
+	outline: 2px solid var(--fi-primary, #0b57d0);
+	outline-offset: 2px;
+}
+.fi-grid-cell-empty {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 60px;
+	color: #b0b4bb;
+	font-family: system-ui, sans-serif;
+	font-size: 11px;
+	text-align: center;
+	border: 1.5px dashed #d3d6db;
+	border-radius: 8px;
+	padding: 8px;
+	box-sizing: border-box;
+}
 .fi-drop-indicator {
 	background: var(--fi-primary, #0b57d0);
 	border-radius: 2px;

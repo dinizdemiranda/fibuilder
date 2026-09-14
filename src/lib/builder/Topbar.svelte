@@ -1,7 +1,9 @@
 <script>
 	import { doc, uiState, clearCanvas } from './state.svelte.js';
+	import { PROJECTS, loadProject } from './projects.js';
 	import Icon from './Icon.svelte';
 	import DocJsonModal from './DocJsonModal.svelte';
+	import OrientationToggle from './OrientationToggle.svelte';
 
 	let pageMenuOpen = $state(false);
 	let confirmClearOpen = $state(false);
@@ -50,6 +52,11 @@
 		jsonModalOpen = true;
 	}
 
+	function selectProject(id) {
+		pageMenuOpen = false;
+		loadProject(id);
+	}
+
 	function doClearCanvas() {
 		clearCanvas();
 		confirmClearOpen = false;
@@ -68,6 +75,17 @@
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div class="page-menu-backdrop" onclick={() => (pageMenuOpen = false)}></div>
 				<div class="page-menu">
+					<div class="page-menu-heading">Recent projects</div>
+					{#each PROJECTS as project (project.id)}
+						<button type="button" class="page-menu-item" onclick={() => selectProject(project.id)}>
+							<Icon name="folder" size={13} />
+							<span class="page-menu-item-label">{project.name}</span>
+							{#if doc.activeProjectId === project.id}
+								<Icon name="check" size={12} />
+							{/if}
+						</button>
+					{/each}
+					<div class="page-menu-divider"></div>
 					<button type="button" class="page-menu-item" onclick={openJsonModal}>
 						<Icon name="copy" size={13} />
 						See JSON
@@ -108,6 +126,7 @@
 		</div>
 	</div>
 	<div class="topbar-side topbar-right">
+		<OrientationToggle value={doc.page.orientation} onchange={(v) => (doc.page.orientation = v)} />
 		<button type="button" class="preview-btn" onclick={() => (uiState.previewOpen = true)}>Preview</button>
 	</div>
 </header>
@@ -299,6 +318,26 @@
 	}
 	.page-menu-item:hover {
 		background: #f0f1f3;
+	}
+	.page-menu-item-label {
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.page-menu-heading {
+		padding: 6px 10px 4px;
+		font-size: 10px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: #8a8f98;
+	}
+	.page-menu-divider {
+		height: 1px;
+		background: #e2e4e8;
+		margin: 4px 0;
 	}
 	.page-menu-item--danger {
 		color: #b3261e;

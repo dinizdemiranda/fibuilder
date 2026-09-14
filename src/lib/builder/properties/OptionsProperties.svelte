@@ -5,7 +5,8 @@
 	import Icon from '../Icon.svelte';
 	import VisibilityFields from './VisibilityFields.svelte';
 	import DynamicValueField from './DynamicValueField.svelte';
-	import { dataSources, getDataSourceById } from '../dataSources.js';
+	import { getDataSourceById } from '../dataSources.js';
+	import { availableDataSources } from '../projects.js';
 
 	let { element } = $props();
 
@@ -82,7 +83,7 @@
 				onchange={onMappedSourceChange}
 			>
 				<option value="">Select a data source…</option>
-				{#each dataSources as s (s.id)}
+				{#each availableDataSources() as s (s.id)}
 					<option value={s.id}>{s.name}</option>
 				{/each}
 			</select>
