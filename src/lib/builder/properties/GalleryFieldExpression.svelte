@@ -1,6 +1,7 @@
 <script>
 	import Icon from '../Icon.svelte';
 	import { doc } from '../state.svelte.js';
+	import { textPixelWidth } from '../textMeasure.js';
 
 	// `fieldConfig` is the live { enabled, parts } record itself (part of
 	// doc), mutated in place — same direct-mutation style as
@@ -9,6 +10,7 @@
 
 	let parts = $derived(fieldConfig.parts.length ? fieldConfig.parts : [{ type: 'literal', value: '' }]);
 	let pickerOpen = $state(false);
+	let focusedIndex = $state(null);
 
 	function ensureParts() {
 		if (!fieldConfig.parts.length) fieldConfig.parts.push({ type: 'literal', value: '' });
@@ -43,9 +45,23 @@
 		pickerOpen = false;
 	}
 
-	function widthCh(value, placeholderText = '') {
+	function onLiteralFocus(i) {
+		focusedIndex = i;
+		pickerOpen = true;
+	}
+
+	function onLiteralBlur(i) {
+		if (focusedIndex === i) focusedIndex = null;
+	}
+
+	// See ExpressionField.svelte's literalWidth for why this measures actual
+	// pixel width instead of an `Nch` approximation — the same fixed-point
+	// overshoot was making adjacent chips here look like they had a space
+	// between them that wasn't actually in the data.
+	function literalWidth(value, placeholderText = '', isFocused = false) {
 		const text = value || placeholderText;
-		return Math.max(4, text.length + 1);
+		const caretRoom = isFocused ? 4 : 0;
+		return `${Math.max(2, Math.ceil(textPixelWidth(text)) + caretRoom)}px`;
 	}
 
 	function chipLabel(part) {
@@ -67,10 +83,11 @@
 			<input
 				class="gfe-literal"
 				type="text"
-				style="width: {widthCh(part.value, parts.length === 1 ? placeholder : '')}ch"
+				style="width: {literalWidth(part.value, parts.length === 1 ? placeholder : '', focusedIndex === i)}"
 				placeholder={parts.length === 1 ? placeholder : ''}
 				value={part.value}
-				onfocus={() => (pickerOpen = true)}
+				onfocus={() => onLiteralFocus(i)}
+				onblur={() => onLiteralBlur(i)}
 				oninput={(e) => onLastLiteralInput(e, i)}
 				onkeydown={(e) => onLiteralKeydown(e, i)}
 			/>
@@ -78,7 +95,7 @@
 			<input
 				class="gfe-literal"
 				type="text"
-				style="width: {widthCh(part.value)}ch"
+				style="width: {literalWidth(part.value)}"
 				value={part.value}
 				oninput={(e) => updateLiteral(i, e.currentTarget.value)}
 				onkeydown={(e) => onLiteralKeydown(e, i)}
@@ -119,11 +136,16 @@
 
 <style>
 	.gfe-field {
+		/* No flex `gap` here on purpose — see ExpressionField.svelte's
+		   identical .ef-field comment: it added a uniform gap regardless of
+		   whether the literal between two chips actually held a typed
+		   space, which read as a space that wasn't really there. Spacing
+		   comes only from .gfe-chip's own margin plus each literal's actual
+		   measured content width now. */
 		position: relative;
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 4px;
 		width: 100%;
 		min-height: 34px;
 		padding: 5px 6px;
@@ -139,20 +161,21 @@
 	.gfe-literal {
 		flex-shrink: 0;
 		max-width: 100%;
-		min-width: 6px;
+		min-width: 2px;
 		border: none;
 		outline: none;
 		background: transparent;
 		font-family: inherit;
 		font-size: 13px;
 		color: #1a1c1e;
-		padding: 2px 1px;
+		padding: 2px 0;
 	}
 	.gfe-chip {
 		flex-shrink: 0;
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;
+		margin: 0 2px;
 		background: #e6f4ea;
 		color: #1a7d3d;
 		border: 1px solid #b7e2c4;

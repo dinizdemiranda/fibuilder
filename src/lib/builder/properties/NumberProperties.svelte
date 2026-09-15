@@ -1,6 +1,7 @@
 <script>
 	import PropSection from './PropSection.svelte';
 	import VisualPicker from './VisualPicker.svelte';
+	import Segmented from './Segmented.svelte';
 	import Switch from './Switch.svelte';
 	import VisibilityFields from './VisibilityFields.svelte';
 	import DynamicValueField from './DynamicValueField.svelte';
@@ -18,12 +19,34 @@
 		<VisualPicker
 			options={[
 				{ value: 'input', label: 'Input', icon: 'textfield' },
-				{ value: 'slider', label: 'Slider', icon: 'slider' }
+				{ value: 'slider', label: 'Slider', icon: 'slider' },
+				{ value: 'counter', label: 'Counter', icon: 'counter' }
 			]}
 			value={element.props.mode}
 			onchange={(v) => (element.props.mode = v)}
 		/>
 	</div>
+	{#if element.props.mode === 'counter'}
+		<div class="prop-field">
+			<span class="prop-label">Button style</span>
+			<Segmented
+				options={[
+					{ value: 'primary', label: 'Primary' },
+					{ value: 'secondary', label: 'Secondary' },
+					{ value: 'text', label: 'Text' }
+				]}
+				value={element.props.variant ?? 'primary'}
+				onchange={(v) => (element.props.variant = v)}
+			/>
+		</div>
+		<div class="prop-field">
+			<span class="prop-label">Input width</span>
+			<div class="num-width-row">
+				<input type="range" min="48" max="96" bind:value={element.props.counterWidth} />
+				<input class="ctrl-text num-width-num" type="number" min="48" max="96" bind:value={element.props.counterWidth} />
+			</div>
+		</div>
+	{/if}
 	<DynamicValueField {element} fieldKey="defaultValue" label="Default Value" placeholder="0" />
 </PropSection>
 
@@ -49,3 +72,21 @@
 </PropSection>
 
 <VisibilityFields {element} />
+
+<style>
+	.num-width-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.num-width-row input[type='range'] {
+		flex: 1;
+		min-width: 0;
+	}
+	.num-width-num {
+		width: 48px;
+		flex-shrink: 0;
+		padding: 8px 6px;
+		text-align: center;
+	}
+</style>

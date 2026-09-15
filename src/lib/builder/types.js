@@ -45,12 +45,16 @@ export const blockDefs = {
 		category: 'component',
 		defaultProps: {
 			label: 'Choose an option',
+			showLabel: true,
 			mode: 'dropdown',
 			sourceMode: 'manual', // 'manual' | 'mapped'
 			options: ['Option 1', 'Option 2'],
 			mappedSourceId: null,
 			mappedColumn: null,
-			defaultValue: ''
+			defaultValue: '',
+			attached: true, // button group only — buttons share borders as one segmented control instead of standing apart
+			clearOption: false, // button group + mapped only — prepends a selected-by-default clear button
+			clearLabel: 'All' // the clear button's own text
 		}
 	},
 	image: {
@@ -99,12 +103,14 @@ export const blockDefs = {
 		category: 'component',
 		defaultProps: {
 			label: 'Number',
-			mode: 'input', // 'input' | 'slider'
+			mode: 'input', // 'input' | 'slider' | 'counter'
 			min: 0,
 			max: 100,
 			step: 1,
 			decimals: false,
-			defaultValue: ''
+			defaultValue: '1',
+			variant: 'primary', // 'primary' | 'secondary' | 'text' — the counter mode's -/+ buttons only
+			counterWidth: 48 // px, 48-96 — the counter mode's center input only
 		}
 	},
 	labelSelector: {

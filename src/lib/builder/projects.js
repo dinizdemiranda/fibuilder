@@ -19,10 +19,10 @@ export const PROJECTS = [
 	{
 		id: 'retail',
 		name: 'Retail',
-		// Intentionally empty for now — the retail-flavored labels/data
-		// sources this project would actually use haven't been authored yet.
+		// Labels still TBD — the retail-flavored label set this project
+		// would actually use hasn't been authored yet.
 		labelIds: [],
-		dataSourceIds: []
+		dataSourceIds: ['bakery']
 	}
 ];
 

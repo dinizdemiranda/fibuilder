@@ -1,6 +1,4 @@
 import { blockDefs } from './types.js';
-import { labelDefinitions } from './labels.js';
-import { dataSources } from './dataSources.js';
 import { defaultGrid } from './columnGrid.js';
 
 let idCounter = 0;
@@ -10,7 +8,7 @@ function nextId(type) {
 }
 
 export const doc = $state({
-	activeProjectId: 'logistics',
+	activeProjectId: 'retail',
 	page: {
 		title: 'Untitled Page',
 		background: '#ffffff',
@@ -43,9 +41,15 @@ export const doc = $state({
 	},
 	elements: [], // column A (the only column when columns === 1)
 	elementsB: [], // column B — kept even when hidden, so toggling columns doesn't lose data
-	labels: labelDefinitions.map((l) => l.id), // ids of imported label_options.json definitions, in import order
-	dataSourceIds: dataSources.map((d) => d.id), // ids of data sources available in the active project — see projects.js
-	variables: [], // [{ id, name, type: 'string'|'number'|'boolean'|'date', defaultValue }]
+	// Starting labels/data sources match the active project above (retail)
+	// — can't import PROJECTS from projects.js to derive this directly
+	// without a circular import (projects.js itself imports `doc` from
+	// here), so this just has to be kept in sync with PROJECTS['retail']
+	// by hand. loadProject() (projects.js) is what keeps them in sync on
+	// every subsequent project switch.
+	labels: [], // ids of imported label_options.json definitions, in import order
+	dataSourceIds: ['bakery'], // ids of data sources available in the active project — see projects.js
+	variables: [], // [{ id, name, type: 'string'|'number'|'boolean'|'date', props: { value }, bindings }] — see variables.js
 	workflow: {
 		connections: [], // [{ id, from: endpoint, to: endpoint }] — see workflow.js for endpoint shapes
 		transforms: [], // [{ id, type, valueType, settings, x, y }] — intermediate nodes, own position lives on the record
@@ -146,23 +150,42 @@ function isRootContainerId(id) {
 	return id === null || id === undefined || id === 'colB';
 }
 
-// Section and Grid are the only element types with their own `children` list
-// — both are restricted to living directly in a root column (never nested
-// inside each other or themselves), so they share this one check everywhere.
+// Section and Grid are the only element types with their own `children` list.
 function isContainerType(type) {
 	return type === 'section' || type === 'grid';
+}
+
+// Whether `type` (always a container type — this only ever gates Section/
+// Grid placement) may land inside the container at `containerId`. Root
+// columns always accept both. Beyond that, only a Section may nest, and
+// only directly inside a Grid — a Grid can never nest inside anything (it
+// stays root-only), and a Section can never nest inside another Section.
+// Keeps the tree shallow and predictable everywhere except the one
+// grid-holds-sections case this exists for.
+function canPlaceContainer(type, containerId) {
+	if (isRootContainerId(containerId)) return true;
+	if (type !== 'section') return false;
+	return findContainerById(containerId)?.type === 'grid';
 }
 
 function rootListFor(containerId) {
 	return containerId === 'colB' ? doc.elementsB : doc.elements;
 }
 
+// Recursive: a container can now itself sit inside another container (a
+// Section inside a Grid), so a target id might be nested arbitrarily deep
+// rather than always a direct child of a root column.
 function findContainerById(id) {
-	return (
-		doc.elements.find((el) => isContainerType(el.type) && el.id === id) ??
-		doc.elementsB.find((el) => isContainerType(el.type) && el.id === id) ??
-		null
-	);
+	const search = (list) => {
+		for (const el of list) {
+			if (!el || !isContainerType(el.type)) continue;
+			if (el.id === id) return el;
+			const found = search(el.children);
+			if (found) return found;
+		}
+		return null;
+	};
+	return search(doc.elements) ?? search(doc.elementsB);
 }
 
 function listFor(containerId) {
@@ -170,22 +193,28 @@ function listFor(containerId) {
 	return findContainerById(containerId)?.children ?? null;
 }
 
-// Elements live at most two levels deep: a page column, or a section/grid's
-// children within a column. Neither nests inside the other, so this is the
-// whole search space. `owner` is the section/grid element the list belongs
-// to (null for a root column) — grids need it to know whether a slot is
-// cleared with `null` (preserving every other zone's position) instead of
-// spliced out (which would shift them).
+function locateInContainers(list, id) {
+	for (const el of list) {
+		if (!el || !isContainerType(el.type)) continue;
+		const idx = el.children.findIndex((c) => c?.id === id);
+		if (idx !== -1) return { list: el.children, index: idx, element: el.children[idx], owner: el };
+		const found = locateInContainers(el.children, id);
+		if (found) return found;
+	}
+	return null;
+}
+
+// A page column, or an element nested arbitrarily deep inside containers
+// within one (a Section, or a Section inside a Grid). `owner` is the
+// immediate container the element sits in (null for a root column) — grids
+// need it to know whether a slot is cleared with `null` (preserving every
+// other zone's position) instead of spliced out (which would shift them).
 function locateContainer(id) {
 	for (const rootList of [doc.elements, doc.elementsB]) {
 		const idx = rootList.findIndex((el) => el?.id === id);
 		if (idx !== -1) return { list: rootList, index: idx, element: rootList[idx], owner: null };
-		for (const el of rootList) {
-			if (isContainerType(el.type)) {
-				const cIdx = el.children.findIndex((c) => c?.id === id);
-				if (cIdx !== -1) return { list: el.children, index: cIdx, element: el.children[cIdx], owner: el };
-			}
-		}
+		const found = locateInContainers(rootList, id);
+		if (found) return found;
 	}
 	return { list: null, index: -1, element: null, owner: null };
 }
@@ -299,8 +328,7 @@ export function addElement(type, target = {}) {
 	const def = blockDefs[type];
 	if (!def) return null;
 	let containerId = target.containerId ?? null;
-	// Section/Grid can only live in a column — never inside another section or grid.
-	if (isContainerType(type) && !isRootContainerId(containerId)) containerId = null;
+	if (isContainerType(type) && !canPlaceContainer(type, containerId)) containerId = null;
 	const container = findContainerById(containerId);
 	if (container?.type === 'grid') {
 		const cellIndex = target.index ?? container.children.findIndex((c) => !c);
@@ -405,7 +433,7 @@ export function moveElement(id, target = {}) {
 	const { list: fromList, index: fromIndex, element, owner: fromOwner } = locateContainer(id);
 	if (!element) return;
 	let containerId = target.containerId ?? null;
-	if (isContainerType(element.type) && !isRootContainerId(containerId)) containerId = null;
+	if (isContainerType(element.type) && !canPlaceContainer(element.type, containerId)) containerId = null;
 	const toContainer = findContainerById(containerId);
 
 	if (toContainer?.type === 'grid') {

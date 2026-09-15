@@ -113,7 +113,7 @@
 				list={element.children}
 				containerId={element.id}
 				direction="vertical"
-				allowSections={false}
+				allowSections={true}
 				emptyLabel="Drop components into this grid"
 				gridConfig={element}
 			/>

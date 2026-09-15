@@ -73,6 +73,17 @@
 		if (preview && !was) runRowSelectEvents(element, pagedRows[i]);
 	}
 
+	// Preview defaults to the first row selected — same as if the user had
+	// clicked it — so anything wired to "On Select" (a paired Data Lookup,
+	// Image, or variable) has something to show immediately instead of
+	// sitting empty until a real click happens. Re-fires whenever there's no
+	// current selection and rows are available, which covers first mount as
+	// well as after a refresh/reset-filters (both already clear
+	// selectedIndex back to null above).
+	$effect(() => {
+		if (preview && selectedIndex === null && pagedRows.length > 0) selectItem(0);
+	});
+
 	// --- Pagination: the gallery never scrolls, so `rows` is exactly how
 	// many rows show per page; the rest are reached via Back/Next. Column
 	// count is fully computable from the known min/max card width.

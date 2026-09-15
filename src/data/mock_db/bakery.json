@@ -1,0 +1,155 @@
+{
+  "name": "Baked Goods",
+  "description": "Baked goods query for the bakery sector.",
+  "mock_response": true,
+  "query": {
+    "name": "get_multi_bakery_products",
+    "parameters": {
+      "product_id": "id"
+    },
+    "description": "Baked goods query for the bakery sector"
+  },
+  "source_tables": [
+    "products"
+  ],
+  "returned_at": "2026-09-05T12:00:00Z",
+  "row_count": 12,
+  "label_types": [
+    "baked_goods"
+  ],
+  "rows": [
+  {
+    "product_name": "White Sandwich Loaf",
+    "id": "41827",
+    "image_path": "bakery-images/white-sandwich-loaf.png",
+    "type": "bread",
+    "sold_by": "quantity",
+    "price": 4.5,
+    "kcal": 620,
+    "allergens": "Gluten, Wheat, Soy",
+    "shelf_life_days": 4
+  },
+  {
+    "product_name": "Wholemeal Sandwich Loaf",
+    "id": "41828",
+    "image_path": "bakery-images/wholemeal-sandwich-loaf.png",
+    "type": "bread",
+    "sold_by": "quantity",
+    "price": 4.8,
+    "kcal": 600,
+    "allergens": "Gluten, Wheat, Soy, Sesame",
+    "shelf_life_days": 4
+  },
+  {
+    "product_name": "Baguette",
+    "id": "41829",
+    "image_path": "bakery-images/baguette.png",
+    "type": "bread",
+    "sold_by": "quantity",
+    "price": 3.5,
+    "kcal": 430,
+    "allergens": "Gluten, Wheat",
+    "shelf_life_days": 1
+  },
+  {
+    "product_name": "Sourdough Loaf",
+    "id": "41830",
+    "image_path": "bakery-images/sourdough-loaf.png",
+    "type": "bread",
+    "sold_by": "weight",
+    "price": 12.0,
+    "kcal": 250,
+    "allergens": "Gluten, Wheat",
+    "shelf_life_days": 4
+  },
+  {
+    "product_name": "Sausage Roll",
+    "id": "41831",
+    "image_path": "bakery-images/sausage-roll.png",
+    "type": "savory",
+    "sold_by": "quantity",
+    "price": 4.5,
+    "kcal": 380,
+    "allergens": "Gluten, Wheat, Milk, Egg, Soy",
+    "shelf_life_days": 2
+  },
+  {
+    "product_name": "Meat Pie",
+    "id": "41832",
+    "image_path": "bakery-images/meat-pie.png",
+    "type": "savory",
+    "sold_by": "quantity",
+    "price": 5.5,
+    "kcal": 460,
+    "allergens": "Gluten, Wheat, Milk, Egg, Soy",
+    "shelf_life_days": 2
+  },
+  {
+    "product_name": "Cheese & Bacon Roll",
+    "id": "41833",
+    "image_path": "bakery-images/cheese-and-bacon-roll.png",
+    "type": "savory",
+    "sold_by": "quantity",
+    "price": 4.8,
+    "kcal": 410,
+    "allergens": "Gluten, Wheat, Milk, Soy",
+    "shelf_life_days": 2
+  },
+  {
+    "product_name": "Focaccia",
+    "id": "41834",
+    "image_path": "bakery-images/focaccia.png",
+    "type": "savory",
+    "sold_by": "weight",
+    "price": 16.0,
+    "kcal": 280,
+    "allergens": "Gluten, Wheat",
+    "shelf_life_days": 2
+  },
+  {
+    "product_name": "Lamington",
+    "id": "41835",
+    "image_path": "bakery-images/lamington.png",
+    "type": "sweet",
+    "sold_by": "quantity",
+    "price": 3.8,
+    "kcal": 330,
+    "allergens": "Gluten, Wheat, Milk, Egg, Soy",
+    "shelf_life_days": 5
+  },
+  {
+    "product_name": "Chocolate Muffin",
+    "id": "41836",
+    "image_path": "bakery-images/chocolate-muffin.png",
+    "type": "sweet",
+    "sold_by": "quantity",
+    "price": 4.2,
+    "kcal": 450,
+    "allergens": "Gluten, Wheat, Milk, Egg, Soy",
+    "shelf_life_days": 4
+  },
+  {
+    "product_name": "Banana Bread",
+    "id": "41837",
+    "image_path": "bakery-images/banana-bread.png",
+    "type": "sweet",
+    "sold_by": "weight",
+    "price": 18.0,
+    "kcal": 320,
+    "allergens": "Gluten, Wheat, Milk, Egg, Soy, Walnut",
+    "shelf_life_days": 5
+  },
+  {
+    "product_name": "Chocolate Chip Cookies",
+    "id": "41838",
+    "image_path": "bakery-images/chocolate-chip-cookies.png",
+    "type": "sweet",
+    "sold_by": "weight",
+    "price": 22.0,
+    "kcal": 490,
+    "allergens": "Gluten, Wheat, Milk, Egg, Soy",
+    "shelf_life_days": 14
+  }
+]
+
+}

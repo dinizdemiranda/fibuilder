@@ -80,7 +80,7 @@
 <div class="bpop-panel">
 	<div class="bpop-header">
 		<span class="bpop-title">{isNew ? 'Add filter' : 'Edit filter'}</span>
-		<button type="button" class="bpop-close" onclick={onclose} data-tooltip="Close">
+		<button type="button" class="bpop-close" onclick={onclose}>
 			<Icon name="close" size={13} />
 		</button>
 	</div>

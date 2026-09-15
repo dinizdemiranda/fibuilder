@@ -2,6 +2,7 @@
 	import Segmented from './Segmented.svelte';
 	import VisualPicker from './VisualPicker.svelte';
 	import PropSection from './PropSection.svelte';
+	import Switch from './Switch.svelte';
 	import Icon from '../Icon.svelte';
 	import VisibilityFields from './VisibilityFields.svelte';
 	import DynamicValueField from './DynamicValueField.svelte';
@@ -11,6 +12,8 @@
 	let { element } = $props();
 
 	let mappedSource = $derived(getDataSourceById(element.props.mappedSourceId));
+	let isButtonGroup = $derived(element.props.mode === 'buttonGroup');
+	const BUTTON_GROUP_MAX = 5;
 
 	function addOption() {
 		element.props.options.push(`Option ${element.props.options.length + 1}`);
@@ -27,7 +30,10 @@
 
 <PropSection title="Content">
 	<div class="prop-field">
-		<label class="prop-label" for="opt-label">Label</label>
+		<div class="prop-label-row">
+			<label class="prop-label" for="opt-label">Label</label>
+			<Switch bind:checked={element.props.showLabel} />
+		</div>
 		<input id="opt-label" class="ctrl-text" type="text" bind:value={element.props.label} />
 	</div>
 	<div class="prop-field">
@@ -36,12 +42,19 @@
 			options={[
 				{ value: 'dropdown', label: 'Dropdown', icon: 'dropdown' },
 				{ value: 'radio', label: 'Radio', icon: 'radio' },
-				{ value: 'checkbox', label: 'Checkbox', icon: 'checkbox' }
+				{ value: 'checkbox', label: 'Checkbox', icon: 'checkbox' },
+				{ value: 'buttonGroup', label: 'Button Group', icon: 'buttonGroup' }
 			]}
 			value={element.props.mode}
 			onchange={(v) => (element.props.mode = v)}
 		/>
 	</div>
+	{#if isButtonGroup}
+		<div class="prop-field prop-field-row">
+			<span class="prop-label">Attached</span>
+			<Switch bind:checked={element.props.attached} />
+		</div>
+	{/if}
 	<div class="prop-field">
 		<span class="prop-label">Choices</span>
 		<Segmented
@@ -70,7 +83,17 @@
 						</button>
 					</div>
 				{/each}
-				<button type="button" class="add-btn" onclick={addOption}>+ Add choice</button>
+				<button
+					type="button"
+					class="add-btn"
+					disabled={isButtonGroup && element.props.options.length >= BUTTON_GROUP_MAX}
+					onclick={addOption}
+				>
+					+ Add choice
+				</button>
+				{#if isButtonGroup && element.props.options.length >= BUTTON_GROUP_MAX}
+					<p class="prop-hint">A button group shows at most {BUTTON_GROUP_MAX} choices.</p>
+				{/if}
 			</div>
 		</div>
 	{:else}
@@ -98,7 +121,24 @@
 					{/each}
 				</select>
 			</div>
-			<p class="prop-hint">Shows every distinct value of that column as a choice.</p>
+			<p class="prop-hint">
+				Shows every distinct value of that column as a choice.{isButtonGroup
+					? ` A button group shows at most the first ${BUTTON_GROUP_MAX}.`
+					: ''}
+			</p>
+			{#if isButtonGroup}
+				<div class="prop-field prop-field-row">
+					<span class="prop-label">Include a clear button</span>
+					<Switch bind:checked={element.props.clearOption} />
+				</div>
+				{#if element.props.clearOption}
+					<div class="prop-field">
+						<label class="prop-label" for="opt-clear-label">Clear button text</label>
+						<input id="opt-clear-label" class="ctrl-text" type="text" bind:value={element.props.clearLabel} />
+					</div>
+					<p class="prop-hint">Added first, selected by default — clicking it clears the value.</p>
+				{/if}
+			{/if}
 		{/if}
 	{/if}
 	<DynamicValueField {element} fieldKey="defaultValue" label="Default Value" placeholder="Match a choice above" />

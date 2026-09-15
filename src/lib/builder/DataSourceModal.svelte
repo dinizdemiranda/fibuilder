@@ -28,7 +28,7 @@
 				<h2 class="dsm-title">{source.name}</h2>
 				<p class="dsm-desc">{source.description}</p>
 			</div>
-			<button type="button" class="dsm-close" onclick={onclose} data-tooltip="Close">
+			<button type="button" class="dsm-close" onclick={onclose}>
 				<Icon name="close" size={16} />
 			</button>
 		</div>

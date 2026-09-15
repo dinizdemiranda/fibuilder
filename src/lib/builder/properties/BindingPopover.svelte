@@ -7,7 +7,7 @@
 	let { element, fieldKey, label, onclose } = $props();
 
 	// svelte-ignore state_referenced_locally -- element/fieldKey are fixed for this popover's lifetime (it's remounted fresh each time it opens)
-	const fieldType = getFieldType(element.type, fieldKey);
+	const fieldType = getFieldType(element, fieldKey);
 	const rulesKey = fieldType === 'boolean' ? 'rules' : 'matches';
 	// svelte-ignore state_referenced_locally -- same as above: read once to know whether "Remove condition" should be offered
 	const hadCondition = element.bindings?.[fieldKey]?.kind === 'condition';
@@ -159,7 +159,7 @@
 <div class="bpop-panel">
 	<div class="bpop-header">
 		<span class="bpop-title">{label} condition</span>
-		<button type="button" class="bpop-close" onclick={onclose} data-tooltip="Close">
+		<button type="button" class="bpop-close" onclick={onclose}>
 			<Icon name="close" size={13} />
 		</button>
 	</div>

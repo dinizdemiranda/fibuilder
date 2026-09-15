@@ -19,7 +19,7 @@
 <div class="lpop-backdrop" onclick={onclose}></div>
 
 <div class="lpop-panel">
-	<button type="button" class="lpop-close" onclick={onclose} data-tooltip="Close">
+	<button type="button" class="lpop-close" onclick={onclose}>
 		<Icon name="close" size={14} />
 	</button>
 	<div class="lpop-preview">

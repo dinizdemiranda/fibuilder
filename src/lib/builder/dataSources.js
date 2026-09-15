@@ -2,6 +2,7 @@ import orders from '../../data/mock_db/orders.json';
 import packages from '../../data/mock_db/packages.json';
 import replacementOrders from '../../data/mock_db/replacement_orders.json';
 import returns from '../../data/mock_db/returns.json';
+import bakery from '../../data/mock_db/bakery.json';
 
 // Each mock_db file stands in for a query against a real data source — same
 // name/description/rows shape, so the UI just needs a thin, uniform wrapper
@@ -20,7 +21,8 @@ export const dataSources = [
 	normalize('orders', orders),
 	normalize('packages', packages),
 	normalize('replacement_orders', replacementOrders),
-	normalize('returns', returns)
+	normalize('returns', returns),
+	normalize('bakery', bakery)
 ];
 
 export function getDataSourceById(id) {

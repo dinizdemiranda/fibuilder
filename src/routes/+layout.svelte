@@ -1,7 +1,85 @@
 <script>
+	import { onMount } from 'svelte';
 	import favicon from '$lib/assets/favicon.svg';
 
 	let { children } = $props();
+
+	// App-wide tooltip: replaces the native title="" tooltip (which has an
+	// ~1s hover delay) with one that shows instantly. Every hover target
+	// sets data-tooltip="..." instead of title, and this is the only place
+	// that renders it.
+	//
+	// This used to be a pure-CSS ::after pseudo-element, absolutely
+	// positioned relative to its trigger — which meant any trigger sitting
+	// inside a scrollable/overflow:hidden ancestor (the properties panel,
+	// the canvas page, etc.) got its tooltip clipped or, worse, silently
+	// widened that ancestor's scrollable bounds just by existing. That was
+	// patched three separate times with per-container CSS overrides
+	// (anchor to an edge here, flip downward there) — real fixes, but only
+	// for the specific containers someone happened to notice. A fixed-
+	// position tooltip computed from the trigger's actual viewport
+	// geometry sidesteps the whole class of bug at once: it's never a
+	// descendant of the hovered element, so no ancestor's overflow can
+	// clip or measure it, and it clamps/flips itself to fit the viewport
+	// wherever it's shown from.
+	const GAP = 6;
+	const EDGE = 8;
+
+	onMount(() => {
+		const el = document.createElement('div');
+		el.className = 'fi-tooltip';
+		el.style.display = 'none';
+		document.body.appendChild(el);
+
+		let current = null;
+
+		function show(target, text) {
+			current = target;
+			el.textContent = text;
+			el.style.visibility = 'hidden';
+			el.style.display = 'block';
+			const rect = target.getBoundingClientRect();
+			const tt = el.getBoundingClientRect();
+			let left = rect.left + rect.width / 2 - tt.width / 2;
+			left = Math.max(EDGE, Math.min(left, window.innerWidth - tt.width - EDGE));
+			let top = rect.top - tt.height - GAP;
+			if (top < EDGE) top = rect.bottom + GAP;
+			el.style.left = `${left}px`;
+			el.style.top = `${top}px`;
+			el.style.visibility = 'visible';
+		}
+
+		function hide() {
+			current = null;
+			el.style.display = 'none';
+		}
+
+		function onMouseOver(e) {
+			const target = e.target.closest?.('[data-tooltip]');
+			const text = target?.getAttribute('data-tooltip');
+			if (target && text && target !== current) show(target, text);
+		}
+
+		function onMouseOut(e) {
+			if (current && (e.target.closest?.('[data-tooltip]') === current) && !current.contains(e.relatedTarget)) {
+				hide();
+			}
+		}
+
+		window.addEventListener('mouseover', onMouseOver);
+		window.addEventListener('mouseout', onMouseOut);
+		// Non-bubbling, but capturing listeners on window still fire for a
+		// scroll on any descendant — used to drop a stale-positioned
+		// tooltip rather than track every scrollable ancestor.
+		window.addEventListener('scroll', hide, true);
+
+		return () => {
+			window.removeEventListener('mouseover', onMouseOver);
+			window.removeEventListener('mouseout', onMouseOut);
+			window.removeEventListener('scroll', hide, true);
+			el.remove();
+		};
+	});
 </script>
 
 <svelte:head>
@@ -22,26 +100,8 @@
 		font-family: system-ui, sans-serif;
 	}
 
-	/* App-wide tooltip: replaces the native title="" tooltip (which has an
-	   ~1s hover delay) with one that shows instantly. Every hover target
-	   sets data-tooltip="..." instead of title, and this is the only place
-	   that renders it. */
-	:global([data-tooltip]) {
-		position: relative;
-	}
-	/* display:none (not opacity/visibility) so the hidden tooltip text never
-	   participates in layout at all — a visibility:hidden pseudo-element
-	   still occupies box space, which was widening scrollable ancestors
-	   (e.g. the properties panel) off-screen and causing a phantom
-	   horizontal scrollbar the moment a wide tooltip existed anywhere in
-	   them, even unhovered. */
-	:global([data-tooltip]::after) {
-		content: attr(data-tooltip);
-		display: none;
-		position: absolute;
-		bottom: calc(100% + 6px);
-		left: 50%;
-		transform: translateX(-50%);
+	:global(.fi-tooltip) {
+		position: fixed;
 		background: #1a1c1e;
 		color: #fff;
 		font-family: system-ui, sans-serif;
@@ -54,50 +114,5 @@
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 		pointer-events: none;
 		z-index: 10000;
-	}
-	:global([data-tooltip]:hover::after) {
-		display: block;
-	}
-	/* The properties panel is flush against the window's right edge, and its
-	   header's Delete button sits right at that edge too — a centered
-	   tooltip there would render half off-screen, forcing a horizontal
-	   scrollbar into existence just from hovering. Anchor to the button's
-	   own right edge instead of centering under it. */
-	:global(.properties-header [data-tooltip]::after) {
-		left: auto;
-		right: 0;
-		transform: none;
-	}
-	/* Anything hovered near the very top of the viewport (the topbar itself,
-	   or the canvas's own toolbar sitting just below it) has no room above it
-	   for the default upward tooltip — it renders clipped/invisible against
-	   the top edge. Flip those down instead. */
-	:global(.topbar [data-tooltip]::after),
-	:global(.canvas-toolbar [data-tooltip]::after) {
-		bottom: auto;
-		top: calc(100% + 6px);
-	}
-	/* The add/remove-column buttons sit right at a page edge (left, right,
-	   or top — see Canvas.svelte). .fi-page clips its own overflow, but
-	   .fi-page-scroll (a nested overflow:auto ancestor) still measures its
-	   own scrollable content bounds from a centered tooltip's box even
-	   though it'd end up visually clipped by .fi-page anyway — that
-	   phantom extra scroll range was what actually created the "weird"
-	   scrollbar/jump the moment one of these was hovered. Anchoring (or, for
-	   the delete button, also flipping down) keeps the tooltip's box inside
-	   the page's own bounds so it never contributes any of that. */
-	:global(.col-add-btn--left[data-tooltip]::after) {
-		left: 0;
-		transform: none;
-	}
-	:global(.col-add-btn--right[data-tooltip]::after),
-	:global(.col-delete-btn[data-tooltip]::after) {
-		left: auto;
-		right: 0;
-		transform: none;
-	}
-	:global(.col-delete-btn[data-tooltip]::after) {
-		bottom: auto;
-		top: calc(100% + 6px);
 	}
 </style>

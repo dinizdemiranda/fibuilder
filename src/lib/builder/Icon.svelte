@@ -53,7 +53,15 @@
 		spaceEvenly: 'M3 3h18v1.5H3V3Z M3 19.5h18v1.5H3V19.5Z M3 3h1.5v18H3V3Z M19.5 3h1.5v18h-1.5V3Z M6 9h3v6H6V9Z M10.5 9h3v6h-3V9Z M15 9h3v6h-3V9Z',
 		dots: 'M6 10a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm6 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm6 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z',
 		clock: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16Zm-1 2h2v6.4l4.2 2.5-1 1.7L11 13V6Z',
-		chevronDown: 'M12 15.2 5.6 8.8 7 7.4l5 5 5-5 1.4 1.4Z'
+		// Sigma (Σ) — the summation symbol reads instantly as "formula" without
+		// needing to render actual letters as a path.
+		formula: 'M5 4h14v2.5H9.2L13.8 12 9.2 17.5H19V20H5v-1.8l5.2-6.2L5 5.8V4Z',
+		chevronDown: 'M12 15.2 5.6 8.8 7 7.4l5 5 5-5 1.4 1.4Z',
+		// Three separate segments in a row — reads as a segmented/button group
+		// control, distinct from the single-pill "button" icon.
+		buttonGroup: 'M3 6h5v12H3V6Zm7 0h6v12h-6V6Zm7 0h5v12h-5V6Z',
+		// A stepper: minus, a small filled field, plus.
+		counter: 'M1.5 11h4v2h-4v-2ZM9 10h6v4H9v-4Zm9-1h2v2h2v2h-2v2h-2v-2h-2v-2h2V9Z'
 	};
 </script>
 

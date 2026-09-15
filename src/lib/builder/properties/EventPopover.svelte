@@ -81,21 +81,26 @@
 		onclose();
 	}
 
+	// A plain onkeydown on the panel (rather than <svelte:window>) so Escape
+	// only closes THIS popover once nothing inside it — e.g. a value
+	// field's own reference picker, or a formula popover opened from one —
+	// has already swallowed the key first.
 	function onKeydown(e) {
-		if (e.key === 'Escape') onclose();
+		if (e.key === 'Escape') {
+			e.stopPropagation();
+			onclose();
+		}
 	}
 </script>
-
-<svelte:window onkeydown={onKeydown} />
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="bpop-backdrop" onclick={onclose}></div>
 
-<div class="bpop-panel">
+<div class="bpop-panel" onkeydown={onKeydown}>
 	<div class="bpop-header">
 		<span class="bpop-title">{isNew ? 'Add event' : 'Edit event'}</span>
-		<button type="button" class="bpop-close" onclick={onclose} data-tooltip="Close">
+		<button type="button" class="bpop-close" onclick={onclose}>
 			<Icon name="close" size={13} />
 		</button>
 	</div>

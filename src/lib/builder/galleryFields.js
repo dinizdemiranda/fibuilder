@@ -13,7 +13,7 @@
 // row) — plus plain 'literal' text.
 
 import { doc } from './state.svelte.js';
-import { nowValue, NOW_SENTINEL } from './bindings.js';
+import { resolveProp, variableAsSource } from './bindings.js';
 
 export const GALLERY_CARD_LAYOUTS = [
 	{ value: 'vertical', label: 'Vertical' },
@@ -49,7 +49,7 @@ function resolvePart(part, row) {
 	if (part.type === 'variable') {
 		const v = doc.variables.find((x) => x.id === part.variableId);
 		if (!v) return '';
-		return v.defaultValue === NOW_SENTINEL ? nowValue() : (v.defaultValue ?? '');
+		return resolveProp(variableAsSource(v), 'value') ?? '';
 	}
 	return '';
 }

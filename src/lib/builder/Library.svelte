@@ -3,13 +3,13 @@
 	import { doc, uiState, addElement, beginDragNew, endDrag, selectElement } from './state.svelte.js';
 	import { getLabelById, formatDimensions, getLabelThumbnail } from './labels.js';
 	import { availableDataSources } from './projects.js';
-	import { VARIABLE_TYPES, typeIcon, removeVariable } from './variables.js';
-	import { NOW_SENTINEL } from './bindings.js';
+	import { VARIABLE_TYPES, typeIcon, removeVariable, createVariable, uniqueVariableName } from './variables.js';
+	import { resolveProp, describeCondition, variableAsSource } from './bindings.js';
 	import Icon from './Icon.svelte';
 	import LabelPickerModal from './LabelPickerModal.svelte';
 	import LabelPopover from './LabelPopover.svelte';
 	import DataSourceModal from './DataSourceModal.svelte';
-	import VariableModal from './VariableModal.svelte';
+	import VariablePopover from './properties/VariablePopover.svelte';
 
 	const tabs = [
 		{ id: 'library', label: 'Library', icon: 'section' },
@@ -18,22 +18,20 @@
 		{ id: 'data', label: 'Data', icon: 'database' }
 	];
 
-	// Flat-with-indent list of every element on the canvas, for the Objects pane.
-	// Sections and Grids are one level deep at most, so a single pass is enough.
+	// Flat-with-indent list of every element on the canvas, for the Objects
+	// pane. Recursive — a Section/Grid's children can themselves include a
+	// container (a Section nested inside a Grid), so depth isn't capped at 1.
 	let objectList = $derived.by(() => {
 		const out = [];
-		const walk = (list) => {
+		const walk = (list, depth) => {
 			for (const el of list) {
-				out.push({ id: el.id, name: el.name, type: el.type, depth: 0 });
-				if (el.type === 'section' || el.type === 'grid') {
-					for (const child of el.children) {
-						if (child) out.push({ id: child.id, name: child.name, type: child.type, depth: 1 });
-					}
-				}
+				if (!el) continue;
+				out.push({ id: el.id, name: el.name, type: el.type, depth });
+				if (el.type === 'section' || el.type === 'grid') walk(el.children, depth + 1);
 			}
 		};
-		walk(doc.elements);
-		walk(doc.elementsB);
+		walk(doc.elements, 0);
+		walk(doc.elementsB, 0);
 		return out;
 	});
 
@@ -43,8 +41,14 @@
 	let openDataSourceId = $state(null);
 	let currentDataSources = $derived(availableDataSources());
 	let varTypeMenuOpen = $state(false);
-	let variableModalType = $state(null); // set to a VARIABLE_TYPES value to open the create modal
-	let editingVariable = $state(null); // set to a variable object to open the edit modal
+	// Tracked by id (not the variable object itself) and re-derived below —
+	// createVariable/doc.variables.push return/hold the reactive $state
+	// proxy, not the plain object a caller constructed, so holding onto a
+	// raw reference here would silently stop reflecting live edits (the
+	// same reason selection elsewhere in the app is an id, re-resolved
+	// through the reactive tree, rather than a held element reference).
+	let editingVariableId = $state(null);
+	let editingVariable = $derived(editingVariableId ? doc.variables.find((v) => v.id === editingVariableId) : null);
 
 	function onDragStart(e, type) {
 		// There's no canvas to drop onto in Workflow mode — flip back to Design
@@ -60,15 +64,21 @@
 		addElement(type);
 	}
 
+	// Created immediately (like dropping a component onto the canvas), then
+	// opened for editing — no separate create-modal/draft step, matching how
+	// a component's own properties are edited live.
 	function startCreateVariable(type) {
 		varTypeMenuOpen = false;
-		variableModalType = type;
+		const variable = createVariable({ name: uniqueVariableName('Variable'), type });
+		editingVariableId = variable.id;
 	}
 
 	function formatVariableDefault(v) {
-		if (v.type === 'boolean') return v.defaultValue === 'true' ? 'true' : 'false';
-		if (v.defaultValue === NOW_SENTINEL) return 'Current time';
-		return v.defaultValue || '—';
+		const pseudo = variableAsSource(v);
+		if (v.bindings?.value?.kind === 'condition') return describeCondition(pseudo, 'value');
+		const raw = resolveProp(pseudo, 'value');
+		if (v.type === 'boolean') return raw === 'true' ? 'true' : 'false';
+		return raw || '—';
 	}
 
 	// Canvas.svelte's own selection effect scrolls the target into view
@@ -213,7 +223,7 @@
 					<ul class="variables-list">
 						{#each doc.variables as v (v.id)}
 							<li class="variable-row">
-								<button type="button" class="variable-desc" onclick={() => (editingVariable = v)}>
+								<button type="button" class="variable-desc" onclick={() => (editingVariableId = v.id)}>
 									<Icon name={typeIcon(v.type)} size={13} />
 									<span class="variable-name">{v.name}</span>
 									<span class="variable-default">{formatVariableDefault(v)}</span>
@@ -267,12 +277,8 @@
 	{/if}
 {/if}
 
-{#if variableModalType}
-	<VariableModal type={variableModalType} onclose={() => (variableModalType = null)} />
-{/if}
-
 {#if editingVariable}
-	<VariableModal variable={editingVariable} onclose={() => (editingVariable = null)} />
+	<VariablePopover variable={editingVariable} onclose={() => (editingVariableId = null)} />
 {/if}
 
 <style>

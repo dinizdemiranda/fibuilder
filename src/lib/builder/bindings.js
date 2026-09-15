@@ -14,6 +14,7 @@
 // from whatever expression was there, and vice versa.
 
 import { allElements, previewOverrides, doc } from './state.svelte.js';
+import { runFormulaCode } from './formulas.js';
 
 // Which prop on each element type holds its "value" — the thing other
 // elements can reference, and the same thing an Image, Data Lookup, or
@@ -59,12 +60,13 @@ export function nowValue() {
 
 // A page-level variable, dressed up as a tiny pseudo-element so it can flow
 // through the exact same resolveProp/sourceCandidates machinery as a real
-// component — element.id is unique across both spaces, so no collision risk.
-// A defaultValue of NOW_SENTINEL resolves to the live date on every read,
-// since this wrapper (and its props.value) is rebuilt fresh each call.
-function variableAsSource(v) {
-	const value = v.defaultValue === NOW_SENTINEL ? nowValue() : v.defaultValue;
-	return { id: v.id, name: v.name, type: 'variable', varType: v.type, props: { value }, bindings: {} };
+// component — element.id is unique across both spaces, so no collision
+// risk. A variable's own props/bindings ARE this shape already (see
+// variables.js), so this only relabels type/varType — props and bindings
+// are the same live objects, not copies, so anything that mutates them
+// (ExpressionField, BindingPopover) is mutating the real variable.
+export function variableAsSource(v) {
+	return { id: v.id, name: v.name, type: 'variable', varType: v.type, props: v.props, bindings: v.bindings };
 }
 
 // Every component AND every variable that can serve as a value source.
@@ -86,9 +88,19 @@ export function valueTypeOf(el) {
 	return VALUE_TYPE[el.type];
 }
 
-export function getFieldType(elementType, fieldKey) {
+// `element` (not just its .type) because a variable's actual data type
+// lives on the instance (varType) — every variable shares the same
+// elementType ('variable'), so there's no per-"type" table that could tell
+// a number variable from a date one the way VALUE_TYPE does for components.
+export function getFieldType(element, fieldKey) {
 	if (fieldKey === 'hidden' || fieldKey === 'disabled') return 'boolean';
-	if (fieldKey === 'defaultValue') return VALUE_TYPE[elementType] ?? 'text';
+	if (element?.type === 'variable') {
+		if (element.varType === 'number') return 'number';
+		if (element.varType === 'date') return 'date';
+		if (element.varType === 'boolean') return 'boolean';
+		return 'text';
+	}
+	if (fieldKey === 'defaultValue') return VALUE_TYPE[element?.type] ?? 'text';
 	return 'text'; // 'content' and anything else static/text-shaped
 }
 
@@ -132,15 +144,40 @@ function sourceValue(id, seen) {
 	return resolveProp(src, key, seen);
 }
 
+// Runs a formula's code against its refs' *live* current values — used by
+// FormulaPopover's preview while the user is still writing/editing it (not
+// during normal render, which goes through evalFormula/resolveProp instead
+// so it gets the seen-guard's cycle protection too).
+export function previewFormula(refs, code) {
+	const seen = new Set();
+	const refNames = Object.keys(refs ?? {});
+	const refValues = refNames.map((n) => sourceValue(refs[n], seen));
+	return runFormulaCode(code, refNames, refValues);
+}
+
+function evalFormula(formula, seen) {
+	if (!formula) return undefined;
+	const refNames = Object.keys(formula.refs ?? {});
+	const refValues = refNames.map((n) => sourceValue(formula.refs[n], seen));
+	const { ok, value } = runFormulaCode(formula.code, refNames, refValues);
+	return ok ? value : undefined;
+}
+
+// The raw (pre-coercion) value a single expression part contributes — a
+// literal's typed text, a ref's live source value, or a formula's computed
+// result. Shared by all three evalExpression branches below.
+function partRawValue(p, seen) {
+	if (p.type === 'ref') return sourceValue(p.sourceId, seen);
+	if (p.type === 'formula') return evalFormula(p.formula, seen);
+	return p.value;
+}
+
 function evalExpression(fieldType, parts, seen) {
 	if (!parts || !parts.length) return '';
 
 	if (fieldType === 'number') {
 		let sum = 0;
-		for (const p of parts) {
-			const raw = p.type === 'ref' ? sourceValue(p.sourceId, seen) : p.value;
-			sum += Number(raw) || 0;
-		}
+		for (const p of parts) sum += Number(partRawValue(p, seen)) || 0;
 		return String(sum);
 	}
 
@@ -150,6 +187,15 @@ function evalExpression(fieldType, parts, seen) {
 		for (const p of parts) {
 			if (p.type === 'literal') {
 				if (p.value !== '' && !Number.isNaN(Number(p.value))) days += Number(p.value);
+				continue;
+			}
+			if (p.type === 'formula') {
+				// A formula's result type isn't declared up front the way a
+				// ref's source type is — treat it as a day-offset number,
+				// same as a literal, which covers the common "add N days"
+				// use case without needing the chip to pick a role.
+				const raw = evalFormula(p.formula, seen);
+				if (raw !== undefined && raw !== '' && !Number.isNaN(Number(raw))) days += Number(raw);
 				continue;
 			}
 			const src = findElement(p.sourceId);
@@ -165,7 +211,7 @@ function evalExpression(fieldType, parts, seen) {
 
 	// text (and options' text-shaped default value): straight concatenation,
 	// in the order the parts were typed/inserted.
-	return parts.map((p) => (p.type === 'ref' ? (sourceValue(p.sourceId, seen) ?? '') : (p.value ?? ''))).join('');
+	return parts.map((p) => (p.type === 'literal' ? (p.value ?? '') : (partRawValue(p, seen) ?? ''))).join('');
 }
 
 const OPERATOR_LABELS = {
@@ -281,7 +327,7 @@ function evalCondition(fieldType, binding, seen) {
 export function describeCondition(element, fieldKey) {
 	const binding = element.bindings?.[fieldKey];
 	if (binding?.kind !== 'condition') return '';
-	const fieldType = getFieldType(element.type, fieldKey);
+	const fieldType = getFieldType(element, fieldKey);
 	const rules = fieldType === 'boolean' ? (binding.rules ?? []) : (binding.matches ?? []);
 
 	const parts = rules.map((r) => {
@@ -312,7 +358,7 @@ export function resolveProp(element, key, seen = new Set()) {
 	if (seen.has(cacheKey)) return raw;
 	seen.add(cacheKey);
 
-	const fieldType = getFieldType(element.type, key);
+	const fieldType = getFieldType(element, key);
 	if (binding.kind === 'expression') return evalExpression(fieldType, binding.parts, seen);
 	if (binding.kind === 'condition') return evalCondition(fieldType, binding, seen);
 	return raw;

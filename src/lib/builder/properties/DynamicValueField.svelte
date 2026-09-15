@@ -7,7 +7,7 @@
 	let { element, fieldKey, label, placeholder = '', multiline = false } = $props();
 
 	// svelte-ignore state_referenced_locally -- element/fieldKey are fixed for this instance's lifetime
-	const fieldType = getFieldType(element.type, fieldKey);
+	const fieldType = getFieldType(element, fieldKey);
 	const isBoolean = fieldType === 'boolean';
 
 	let popoverOpen = $state(false);
