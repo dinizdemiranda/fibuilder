@@ -10,12 +10,14 @@
 	import LabelPopover from './LabelPopover.svelte';
 	import DataSourceModal from './DataSourceModal.svelte';
 	import VariablePopover from './properties/VariablePopover.svelte';
+	import AssistantPanel from './AssistantPanel.svelte';
 
 	const tabs = [
 		{ id: 'library', label: 'Library', icon: 'section' },
 		{ id: 'labels', label: 'Labels', icon: 'label' },
 		{ id: 'objects', label: 'Objects', icon: 'layers' },
-		{ id: 'data', label: 'Data', icon: 'database' }
+		{ id: 'data', label: 'Data', icon: 'database' },
+		{ id: 'assistant', label: 'Assistant', icon: 'assistant' }
 	];
 
 	// Flat-with-indent list of every element on the canvas, for the Objects
@@ -191,7 +193,7 @@
 				{/if}
 			</div>
 			</div>
-		{:else}
+		{:else if activeTab === 'data'}
 			<div class="library-scroll data-tab">
 			<div class="data-sources-section">
 
@@ -256,6 +258,13 @@
 				</div>
 			</div>
 		{/if}
+		<!-- Kept always mounted (never inside the {#if}/{:else if} chain above)
+		     and toggled with `hidden`, not destroyed on tab switch — an
+		     in-progress conversation (and any request in flight) would
+		     otherwise be lost every time the user looked at another tab. -->
+		<div class="assistant-tab-wrap" hidden={activeTab !== 'assistant'}>
+			<AssistantPanel />
+		</div>
 	</aside>
 </div>
 
@@ -349,6 +358,18 @@
 	.library-scroll {
 		flex: 1;
 		overflow-y: auto;
+	}
+	.assistant-tab-wrap {
+		flex: 1;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+	}
+	/* Higher specificity than the bare class rule above, needed because an
+	   author `display` declaration otherwise beats the UA [hidden] default
+	   regardless of attribute vs. class ordering. */
+	.assistant-tab-wrap[hidden] {
+		display: none;
 	}
 	.library-empty {
 		flex: 1;

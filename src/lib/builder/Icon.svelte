@@ -61,7 +61,10 @@
 		// control, distinct from the single-pill "button" icon.
 		buttonGroup: 'M3 6h5v12H3V6Zm7 0h6v12h-6V6Zm7 0h5v12h-5V6Z',
 		// A stepper: minus, a small filled field, plus.
-		counter: 'M1.5 11h4v2h-4v-2ZM9 10h6v4H9v-4Zm9-1h2v2h2v2h-2v2h-2v-2h-2v-2h2V9Z'
+		counter: 'M1.5 11h4v2h-4v-2ZM9 10h6v4H9v-4Zm9-1h2v2h2v2h-2v2h-2v-2h-2v-2h2V9Z',
+		// A sparkle — reads as "AI" without needing a chat-bubble/robot cliche.
+		assistant:
+			'M12 2.5 13.8 9l6.7 1.8-6.7 1.8L12 19.1l-1.8-6.5L3.5 10.8 10.2 9 12 2.5ZM5 16l.8 2.2L8 19l-2.2.8L5 22l-.8-2.2L2 19l2.2-.8L5 16Zm14-1 .7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2Z'
 	};
 </script>
 

@@ -3,11 +3,15 @@
 	import { PROJECTS, loadProject } from './projects.js';
 	import Icon from './Icon.svelte';
 	import DocJsonModal from './DocJsonModal.svelte';
+	import SystemPromptModal from './SystemPromptModal.svelte';
+	import ApiLogModal from './ApiLogModal.svelte';
 	import OrientationToggle from './OrientationToggle.svelte';
 
 	let pageMenuOpen = $state(false);
 	let confirmClearOpen = $state(false);
 	let jsonModalOpen = $state(false);
+	let systemPromptModalOpen = $state(false);
+	let apiLogModalOpen = $state(false);
 
 	let editingTitle = $state(false);
 	// svelte-ignore state_referenced_locally -- seeds the draft once; the effect below resyncs on every doc.page.title change
@@ -52,6 +56,16 @@
 		jsonModalOpen = true;
 	}
 
+	function openSystemPromptModal() {
+		pageMenuOpen = false;
+		systemPromptModalOpen = true;
+	}
+
+	function openApiLogModal() {
+		pageMenuOpen = false;
+		apiLogModalOpen = true;
+	}
+
 	function selectProject(id) {
 		pageMenuOpen = false;
 		loadProject(id);
@@ -89,6 +103,14 @@
 					<button type="button" class="page-menu-item" onclick={openJsonModal}>
 						<Icon name="copy" size={13} />
 						See JSON
+					</button>
+					<button type="button" class="page-menu-item" onclick={openSystemPromptModal}>
+						<Icon name="assistant" size={13} />
+						System prompt
+					</button>
+					<button type="button" class="page-menu-item" onclick={openApiLogModal}>
+						<Icon name="clock" size={13} />
+						AI responses
 					</button>
 					<button type="button" class="page-menu-item page-menu-item--danger" onclick={openClearConfirm}>
 						<Icon name="trash" size={13} />
@@ -133,6 +155,14 @@
 
 {#if jsonModalOpen}
 	<DocJsonModal onclose={() => (jsonModalOpen = false)} />
+{/if}
+
+{#if systemPromptModalOpen}
+	<SystemPromptModal onclose={() => (systemPromptModalOpen = false)} />
+{/if}
+
+{#if apiLogModalOpen}
+	<ApiLogModal onclose={() => (apiLogModalOpen = false)} />
 {/if}
 
 {#if confirmClearOpen}
